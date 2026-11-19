@@ -33,12 +33,14 @@ Grid.prototype.fromState = function (state) {
   return cells;
 };
 
-// Find the first available random position
-Grid.prototype.randomAvailableCell = function () {
+// Find the first available random position. random is optional and works
+// like Math.random (the default).
+Grid.prototype.randomAvailableCell = function (random) {
   var cells = this.availableCells();
+  var pick  = random || Math.random;
 
   if (cells.length) {
-    return cells[Math.floor(Math.random() * cells.length)];
+    return cells[Math.floor(pick() * cells.length)];
   }
 };
 

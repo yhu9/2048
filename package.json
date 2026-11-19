@@ -1,0 +1,11 @@
+{
+  "name": "2048",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0"
+  }
+}

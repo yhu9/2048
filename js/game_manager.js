@@ -1,8 +1,11 @@
-function GameManager(size, InputManager, Actuator, StorageManager) {
+// random is optional: a function returning a number in [0, 1), like
+// Math.random (the default). It decides where new tiles go and their value.
+function GameManager(size, InputManager, Actuator, StorageManager, random) {
   this.size           = size; // Size of the grid
   this.inputManager   = new InputManager;
   this.storageManager = new StorageManager;
   this.actuator       = new Actuator;
+  this.random         = random || Math.random;
 
   this.startTiles     = 2;
 
@@ -68,8 +71,8 @@ GameManager.prototype.addStartTiles = function () {
 // Adds a tile in a random position
 GameManager.prototype.addRandomTile = function () {
   if (this.grid.cellsAvailable()) {
-    var value = Math.random() < 0.9 ? 2 : 4;
-    var tile = new Tile(this.grid.randomAvailableCell(), value);
+    var value = this.random() < 0.9 ? 2 : 4;
+    var tile = new Tile(this.grid.randomAvailableCell(this.random), value);
 
     this.grid.insertTile(tile);
   }
