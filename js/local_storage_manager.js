@@ -33,6 +33,16 @@ function localStorageSupported() {
   }
 }
 
+// A saved grid can be used if its cells form a complete square: as many
+// cells in every column as there are columns.
+function isCompleteGrid(grid) {
+  const cells = grid && grid.cells;
+
+  return Array.isArray(cells) && cells.every((column) => (
+    Array.isArray(column) && column.length === cells.length
+  ));
+}
+
 export class LocalStorageManager {
   constructor() {
     this.storage = localStorageSupported()
@@ -48,9 +58,18 @@ export class LocalStorageManager {
     this.storage.setItem(BEST_SCORE_KEY, score);
   }
 
+  // The saved game, or null if there is none or it can't be used
   getGameState() {
     const stateJSON = this.storage.getItem(GAME_STATE_KEY);
-    return stateJSON ? JSON.parse(stateJSON) : null;
+    let state;
+
+    try {
+      state = stateJSON ? JSON.parse(stateJSON) : null;
+    } catch (error) {
+      return null; // The saved text isn't JSON
+    }
+
+    return state && isCompleteGrid(state.grid) ? state : null;
   }
 
   setGameState(gameState) {
