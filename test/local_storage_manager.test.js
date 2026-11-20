@@ -1,17 +1,12 @@
-"use strict";
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { LocalStorageManager } from "../js/local_storage_manager.js";
+import { Page } from "./helpers/page.js";
 
-const { describe, it } = require("node:test");
-const assert = require("node:assert");
-const { Sandbox } = require("./helpers/sandbox");
-
-function loadPage() {
-  const sandbox = new Sandbox();
-  sandbox.load("js/local_storage_manager.js");
-  return sandbox.window;
-}
-
+// Each manager gets a fresh page, so its localStorage starts empty.
 function newManager() {
-  return new (loadPage().LocalStorageManager)();
+  new Page();
+  return new LocalStorageManager();
 }
 
 function bestScoreStartsAtZero() {
@@ -45,8 +40,8 @@ function clearsGameStateOnly() {
 }
 
 function usesLocalStorage() {
-  const window = loadPage();
-  const storage = new window.LocalStorageManager();
+  const { window } = new Page();
+  const storage = new LocalStorageManager();
 
   storage.setBestScore(64);
 
@@ -55,14 +50,13 @@ function usesLocalStorage() {
 }
 
 function fallsBackToMemory() {
-  const window = loadPage();
+  const { window } = new Page();
   Object.defineProperty(window, "localStorage", { value: undefined });
 
-  const storage = new window.LocalStorageManager();
+  const storage = new LocalStorageManager();
   storage.setBestScore(20);
   storage.setGameState({ score: 20 });
 
-  assert.equal(storage.storage, window.fakeStorage);
   assert.equal(storage.getBestScore(), 20);
   assert.equal(storage.getGameState().score, 20);
 }

@@ -1,63 +1,63 @@
-window.fakeStorage = {
-  _data: {},
+const BEST_SCORE_KEY = "bestScore";
+const GAME_STATE_KEY = "gameState";
 
-  setItem: function (id, val) {
-    return this._data[id] = String(val);
-  },
-
-  getItem: function (id) {
-    return this._data.hasOwnProperty(id) ? this._data[id] : undefined;
-  },
-
-  removeItem: function (id) {
-    return delete this._data[id];
-  },
-
-  clear: function () {
-    return this._data = {};
+// Stands in for localStorage when the browser doesn't allow it, for example
+// in private browsing. Nothing is kept after the page closes.
+class MemoryStorage {
+  constructor() {
+    this.data = {};
   }
-};
 
-function LocalStorageManager() {
-  this.bestScoreKey     = "bestScore";
-  this.gameStateKey     = "gameState";
+  setItem(id, value) {
+    this.data[id] = String(value);
+  }
 
-  var supported = this.localStorageSupported();
-  this.storage = supported ? window.localStorage : window.fakeStorage;
+  getItem(id) {
+    return Object.hasOwn(this.data, id) ? this.data[id] : null;
+  }
+
+  removeItem(id) {
+    delete this.data[id];
+  }
 }
 
-LocalStorageManager.prototype.localStorageSupported = function () {
-  var testKey = "test";
+function localStorageSupported() {
+  const testKey = "test";
 
   try {
-    var storage = window.localStorage;
-    storage.setItem(testKey, "1");
-    storage.removeItem(testKey);
+    window.localStorage.setItem(testKey, "1");
+    window.localStorage.removeItem(testKey);
     return true;
   } catch (error) {
     return false;
   }
-};
+}
 
-// Best score getters/setters
-LocalStorageManager.prototype.getBestScore = function () {
-  return this.storage.getItem(this.bestScoreKey) || 0;
-};
+export class LocalStorageManager {
+  constructor() {
+    this.storage = localStorageSupported()
+      ? window.localStorage
+      : new MemoryStorage();
+  }
 
-LocalStorageManager.prototype.setBestScore = function (score) {
-  this.storage.setItem(this.bestScoreKey, score);
-};
+  getBestScore() {
+    return Number(this.storage.getItem(BEST_SCORE_KEY)) || 0;
+  }
 
-// Game state getters/setters and clearing
-LocalStorageManager.prototype.getGameState = function () {
-  var stateJSON = this.storage.getItem(this.gameStateKey);
-  return stateJSON ? JSON.parse(stateJSON) : null;
-};
+  setBestScore(score) {
+    this.storage.setItem(BEST_SCORE_KEY, score);
+  }
 
-LocalStorageManager.prototype.setGameState = function (gameState) {
-  this.storage.setItem(this.gameStateKey, JSON.stringify(gameState));
-};
+  getGameState() {
+    const stateJSON = this.storage.getItem(GAME_STATE_KEY);
+    return stateJSON ? JSON.parse(stateJSON) : null;
+  }
 
-LocalStorageManager.prototype.clearGameState = function () {
-  this.storage.removeItem(this.gameStateKey);
-};
+  setGameState(gameState) {
+    this.storage.setItem(GAME_STATE_KEY, JSON.stringify(gameState));
+  }
+
+  clearGameState() {
+    this.storage.removeItem(GAME_STATE_KEY);
+  }
+}

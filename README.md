@@ -26,6 +26,15 @@ Many thanks to [rayhaanj](https://github.com/rayhaanj), [Mechazawa](https://gith
 
 That screenshot is fake, by the way. I never reached 2048 :smile:
 
+## Playing the game locally
+The game is written as ES modules, which browsers only load from a web server, so opening `index.html` straight from disk doesn't work. Serve the folder instead, for example with Python:
+
+```sh
+python3 -m http.server 8000
+```
+
+Then open http://localhost:8000 in a current version of Chrome, Firefox, Safari or Edge.
+
 ## Running the tests
 The tests need [Node.js](https://nodejs.org/) 18 or later. Install the test dependencies once, then run the suite:
 

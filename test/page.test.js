@@ -1,34 +1,37 @@
-"use strict";
+// End-to-end tests: load index.html, start the game from its entry module
+// and play with the keyboard and the buttons.
 
-// End-to-end tests: load index.html with all of its scripts and play the
-// game with the keyboard and the buttons.
+import { describe, it, mock } from "node:test";
+import assert from "node:assert";
+import { savedGame } from "./helpers/game.js";
+import { Page, indexHtml } from "./helpers/page.js";
 
-const { describe, it } = require("node:test");
-const assert = require("node:assert");
-const { Sandbox, indexHtml } = require("./helpers/sandbox");
-const { savedGame } = require("./helpers/game");
+const KEY = { left: "ArrowLeft", up: "ArrowUp", right: "ArrowRight" };
+const ENTRY_MODULE = "../js/application.js";
 
-const KEY = { left: 37, up: 38, right: 39, down: 40 };
+// The page starts the real game, which uses Math.random. Fixing it at 0
+// makes new tiles always a 2 in the first free cell, so a new game starts
+// with two 2s at the top of the left column.
+mock.method(Math, "random", () => 0);
+
+let pagesOpened = 0;
 const EMPTY = [0, 0, 0, 0];
 
 // Pass the localStorage of an earlier page as `storage` to reload it.
-function openPage(storage) {
-  const page = new Sandbox({ html: indexHtml(), storage });
+async function openPage(storage) {
+  const page = new Page({ html: indexHtml(), storage });
 
-  // application.js starts the real game, which uses Math.random. Fixing it
-  // at 0 makes new tiles always a 2 in the first free cell, so a new game
-  // starts with two 2s at the top of the left column.
-  page.window.Math.random = () => 0;
+  // A module only runs the first time it is imported. A new query string
+  // makes the entry module run again and start a game on this page.
+  pagesOpened += 1;
+  await import(`${ENTRY_MODULE}?page=${pagesOpened}`);
 
-  page.document.querySelectorAll("script[src]").forEach((script) => {
-    page.load(script.getAttribute("src"));
-  });
   page.flushFrames();
   return page;
 }
 
-function press(page, keyCode) {
-  page.fire(page.document, "keydown", { which: keyCode });
+function press(page, key) {
+  page.fire(page.document, "keydown", { key });
   page.flushFrames();
 }
 
@@ -49,15 +52,15 @@ function message(page) {
   return page.document.querySelector(".game-message");
 }
 
-function startsWithTwoTiles() {
-  const page = openPage();
+async function startsWithTwoTiles() {
+  const page = await openPage();
 
   assert.equal(count(page, ".tile"), 2);
   assert.equal(text(page, ".score-container"), "0");
 }
 
-function mergesWithArrowKeys() {
-  const page = openPage();
+async function mergesWithArrowKeys() {
+  const page = await openPage();
 
   press(page, KEY.up);
 
@@ -67,19 +70,19 @@ function mergesWithArrowKeys() {
   assert.equal(text(page, ".best-container"), "4");
 }
 
-function restoresGameAfterReload() {
-  const first = openPage();
+async function restoresGameAfterReload() {
+  const first = await openPage();
   press(first, KEY.up);
 
-  const second = openPage(first.window.localStorage);
+  const second = await openPage(first.window.localStorage);
 
   assert.equal(count(second, ".tile"), 2);
   assert.equal(count(second, ".tile-4.tile-position-1-1"), 1);
   assert.equal(text(second, ".score-container"), "4");
 }
 
-function newGameKeepsBestScore() {
-  const page = openPage();
+async function newGameKeepsBestScore() {
+  const page = await openPage();
   press(page, KEY.up);
 
   click(page, ".restart-button");
@@ -89,9 +92,9 @@ function newGameKeepsBestScore() {
   assert.equal(text(page, ".best-container"), "4");
 }
 
-function showsWinAndKeepsGoing() {
+async function showsWinAndKeepsGoing() {
   const rows = [[1024, 1024, 0, 0], EMPTY, EMPTY, EMPTY];
-  const page = openPage(savedGame(rows));
+  const page = await openPage(savedGame(rows));
 
   press(page, KEY.left);
 
@@ -105,8 +108,8 @@ function showsWinAndKeepsGoing() {
   assert.equal(count(page, ".tile-2048.tile-position-4-1"), 1);
 }
 
-function showsGameOverAndTriesAgain() {
-  const page = openPage(savedGame([
+async function showsGameOverAndTriesAgain() {
+  const page = await openPage(savedGame([
     [2, 4, 2, 4],
     [4, 2, 4, 2],
     [2, 4, 2, 4],

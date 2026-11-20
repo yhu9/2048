@@ -1,12 +1,6 @@
-"use strict";
-
-const { describe, it } = require("node:test");
-const assert = require("node:assert");
-const { Sandbox } = require("./helpers/sandbox");
-
-const sandbox = new Sandbox();
-sandbox.load("js/tile.js");
-const { Tile } = sandbox.window;
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { Tile } from "../js/tile.js";
 
 function storesPositionAndValue() {
   const tile = new Tile({ x: 1, y: 3 }, 8);

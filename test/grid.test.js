@@ -1,12 +1,7 @@
-"use strict";
-
-const { describe, it } = require("node:test");
-const assert = require("node:assert");
-const { Sandbox } = require("./helpers/sandbox");
-
-const sandbox = new Sandbox();
-sandbox.load("js/grid.js", "js/tile.js");
-const { Grid, Tile } = sandbox.window;
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { Grid } from "../js/grid.js";
+import { Tile } from "../js/tile.js";
 
 function startsEmpty() {
   const grid = new Grid(4);

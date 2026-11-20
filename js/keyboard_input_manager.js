@@ -1,144 +1,132 @@
-function KeyboardInputManager() {
-  this.events = {};
+import { Direction } from "./direction.js";
 
-  if (window.navigator.msPointerEnabled) {
-    //Internet Explorer 10 style
-    this.eventTouchstart    = "MSPointerDown";
-    this.eventTouchmove     = "MSPointerMove";
-    this.eventTouchend      = "MSPointerUp";
-  } else {
-    this.eventTouchstart    = "touchstart";
-    this.eventTouchmove     = "touchmove";
-    this.eventTouchend      = "touchend";
-  }
-
-  this.listen();
-}
-
-KeyboardInputManager.prototype.on = function (event, callback) {
-  if (!this.events[event]) {
-    this.events[event] = [];
-  }
-  this.events[event].push(callback);
+// event.key values that move the tiles
+const MOVE_KEYS = {
+  ArrowUp: Direction.up,
+  ArrowRight: Direction.right,
+  ArrowDown: Direction.down,
+  ArrowLeft: Direction.left,
+  w: Direction.up,
+  d: Direction.right,
+  s: Direction.down,
+  a: Direction.left,
+  k: Direction.up, // Vim keys
+  l: Direction.right,
+  j: Direction.down,
+  h: Direction.left
 };
 
-KeyboardInputManager.prototype.emit = function (event, data) {
-  var callbacks = this.events[event];
-  if (callbacks) {
-    callbacks.forEach(function (callback) {
+const RESTART_KEY = "r";
+
+// A swipe has to be longer than this many pixels to count as a move.
+const MIN_SWIPE_DISTANCE = 10;
+
+export class KeyboardInputManager {
+  constructor() {
+    this.events = {};
+
+    this.listen();
+  }
+
+  on(event, callback) {
+    if (!this.events[event]) {
+      this.events[event] = [];
+    }
+    this.events[event].push(callback);
+  }
+
+  emit(event, data) {
+    const callbacks = this.events[event] || [];
+
+    callbacks.forEach((callback) => {
       callback(data);
     });
   }
-};
 
-KeyboardInputManager.prototype.listen = function () {
-  var self = this;
+  listen() {
+    document.addEventListener("keydown", (event) => {
+      this.handleKey(event);
+    });
 
-  var map = {
-    38: 0, // Up
-    39: 1, // Right
-    40: 2, // Down
-    37: 3, // Left
-    75: 0, // Vim up
-    76: 1, // Vim right
-    74: 2, // Vim down
-    72: 3, // Vim left
-    87: 0, // W
-    68: 1, // D
-    83: 2, // S
-    65: 3  // A
-  };
+    this.bindButtonPress(".retry-button", this.restart);
+    this.bindButtonPress(".restart-button", this.restart);
+    this.bindButtonPress(".keep-playing-button", this.keepPlaying);
 
-  // Respond to direction keys
-  document.addEventListener("keydown", function (event) {
-    var modifiers = event.altKey || event.ctrlKey || event.metaKey ||
-                    event.shiftKey;
-    var mapped    = map[event.which];
+    this.listenForSwipes();
+  }
 
-    if (!modifiers) {
-      if (mapped !== undefined) {
-        event.preventDefault();
-        self.emit("move", mapped);
+  handleKey(event) {
+    const modifiers = event.altKey || event.ctrlKey || event.metaKey ||
+                      event.shiftKey;
+    if (modifiers) return;
+
+    // Letters are matched in either case, so Caps Lock doesn't matter.
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+
+    if (Object.hasOwn(MOVE_KEYS, key)) {
+      event.preventDefault();
+      this.emit("move", MOVE_KEYS[key]);
+    } else if (key === RESTART_KEY) {
+      this.restart(event);
+    }
+  }
+
+  listenForSwipes() {
+    const gameContainer = document.querySelector(".game-container");
+    let startX;
+    let startY;
+
+    gameContainer.addEventListener("touchstart", (event) => {
+      if (event.touches.length > 1 || event.targetTouches.length > 1) {
+        return; // Ignore if touching with more than 1 finger
       }
+
+      startX = event.touches[0].clientX;
+      startY = event.touches[0].clientY;
+
+      event.preventDefault();
+    });
+
+    gameContainer.addEventListener("touchmove", (event) => {
+      event.preventDefault();
+    });
+
+    gameContainer.addEventListener("touchend", (event) => {
+      if (event.touches.length > 0 || event.targetTouches.length > 0) {
+        return; // Ignore if still touching with one or more fingers
+      }
+
+      const dx = event.changedTouches[0].clientX - startX;
+      const dy = event.changedTouches[0].clientY - startY;
+
+      if (Math.max(Math.abs(dx), Math.abs(dy)) > MIN_SWIPE_DISTANCE) {
+        this.emit("move", this.swipeDirection(dx, dy));
+      }
+    });
+  }
+
+  swipeDirection(dx, dy) {
+    if (Math.abs(dx) > Math.abs(dy)) {
+      return dx > 0 ? Direction.right : Direction.left;
     }
+    return dy > 0 ? Direction.down : Direction.up;
+  }
 
-    // R key restarts the game
-    if (!modifiers && event.which === 82) {
-      self.restart.call(self, event);
-    }
-  });
-
-  // Respond to button presses
-  this.bindButtonPress(".retry-button", this.restart);
-  this.bindButtonPress(".restart-button", this.restart);
-  this.bindButtonPress(".keep-playing-button", this.keepPlaying);
-
-  // Respond to swipe events
-  var touchStartClientX, touchStartClientY;
-  var gameContainer = document.getElementsByClassName("game-container")[0];
-
-  gameContainer.addEventListener(this.eventTouchstart, function (event) {
-    if ((!window.navigator.msPointerEnabled && event.touches.length > 1) ||
-        event.targetTouches.length > 1) {
-      return; // Ignore if touching with more than 1 finger
-    }
-
-    if (window.navigator.msPointerEnabled) {
-      touchStartClientX = event.pageX;
-      touchStartClientY = event.pageY;
-    } else {
-      touchStartClientX = event.touches[0].clientX;
-      touchStartClientY = event.touches[0].clientY;
-    }
-
+  restart(event) {
     event.preventDefault();
-  });
+    this.emit("restart");
+  }
 
-  gameContainer.addEventListener(this.eventTouchmove, function (event) {
+  keepPlaying(event) {
     event.preventDefault();
-  });
+    this.emit("keepPlaying");
+  }
 
-  gameContainer.addEventListener(this.eventTouchend, function (event) {
-    if ((!window.navigator.msPointerEnabled && event.touches.length > 0) ||
-        event.targetTouches.length > 0) {
-      return; // Ignore if still touching with one or more fingers
-    }
+  bindButtonPress(selector, handler) {
+    const button = document.querySelector(selector);
+    const listener = (event) => handler.call(this, event);
 
-    var touchEndClientX, touchEndClientY;
-
-    if (window.navigator.msPointerEnabled) {
-      touchEndClientX = event.pageX;
-      touchEndClientY = event.pageY;
-    } else {
-      touchEndClientX = event.changedTouches[0].clientX;
-      touchEndClientY = event.changedTouches[0].clientY;
-    }
-
-    var dx = touchEndClientX - touchStartClientX;
-    var absDx = Math.abs(dx);
-
-    var dy = touchEndClientY - touchStartClientY;
-    var absDy = Math.abs(dy);
-
-    if (Math.max(absDx, absDy) > 10) {
-      // (right : left) : (down : up)
-      self.emit("move", absDx > absDy ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0));
-    }
-  });
-};
-
-KeyboardInputManager.prototype.restart = function (event) {
-  event.preventDefault();
-  this.emit("restart");
-};
-
-KeyboardInputManager.prototype.keepPlaying = function (event) {
-  event.preventDefault();
-  this.emit("keepPlaying");
-};
-
-KeyboardInputManager.prototype.bindButtonPress = function (selector, fn) {
-  var button = document.querySelector(selector);
-  button.addEventListener("click", fn.bind(this));
-  button.addEventListener(this.eventTouchend, fn.bind(this));
-};
+    button.addEventListener("click", listener);
+    button.addEventListener("touchend", listener);
+  }
+}
