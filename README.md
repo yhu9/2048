@@ -8,62 +8,13 @@ A version of [2048](https://github.com/gabrielecirulli/2048) in which the tiles 
 </p>
 
 ## How to play
-The board has 4 columns and 6 rows, and starts empty.
-
-### The falling tile
-- A new tile comes in at a free space of the top row, picked at random. It is a 2 nine times out of ten, and a 4 otherwise.
-- Every three quarters of a second it falls one space.
-- If the space below it holds a tile with the same number, the two merge into one tile with twice the number. That number is added to your score, and the merged tile has landed.
-- If the space below it holds a different tile, or it is at the bottom of the board, it lands where it is.
-- As soon as a tile has landed, the next one comes in.
-
-The clock only moves the falling tile. Tiles that have landed stay where they are until you move them.
-
-### Controls
-| Key | What it does |
-| --- | --- |
-| **Left** and **right** (arrow keys, `A` and `D`, or `H` and `L`) | First every landed tile slides as far as it can go that way, and landed tiles with the same number that meet merge. Then the falling tile moves one space that way, if the space is free. If the space holds a tile with the same number, the two merge and the merged tile has landed. |
-| **Down** (arrow key, `S` or `J`) | Every tile drops as far down as it can go, the falling tile too, and tiles with the same number that meet merge. The falling tile has then landed. |
-| **Up** | Nothing: tiles only go down. |
-| `P` | Pauses the game. Press it again to go on. |
-| `R` | Starts a new game. |
-
-On a touch screen, swipe left, right or down on the board.
-
-Two details of a move:
-
-- When the landed tiles slide left or right, the falling tile is in their way. They can't pass it or merge with it.
-- A tile merges once per move. Two tiles that have just merged don't merge again until the next move or tick.
-
-### When the top row is full
-A tile that lands when the top row has no free space is not followed by a new one, but the game goes on. You can still move the landed tiles left, right and down. As soon as a move frees a space in the top row, the next tile comes in.
-
-### Winning and losing
-- You win when you make a 2048 tile. Choose **Keep going** to play on for a higher score.
-- The game is over when the top row is full and no move left, right or down would move or merge a tile.
-
-### Pausing
-Press `P`, or the pause button at the top right corner of the board. While the game is paused nothing moves, no tile comes in and the keys do nothing. The button shows a play icon; press it or `P` again to go on. The next tile step comes a full three quarters of a second later.
-
-### Saved games and best scores
-The game is saved in your browser after every step of the clock and every move, so closing or reloading the page goes on where you left off. A pause isn't saved: a reloaded game is running. The best score is kept too.
-
-## How it differs from the original 2048
-| | Original | This version |
-| --- | --- | --- |
-| Board | 4 columns and 4 rows | 4 columns and 6 rows |
-| New tiles | Two at the start, then one anywhere on the board after every move | None at the start, then one at a time in the top row, falling by itself |
-| Moves | Up, down, left and right slide every tile | Left and right slide the landed tiles and steer the falling one, down drops everything, up does nothing |
-| Time | None | The falling tile moves every three quarters of a second, and the game can be paused |
-| Game over | No move is left | The top row is full and no move is left |
-
-## Board sizes
-The game is played on 4 columns and 6 rows, set by `DEFAULT_BOARD_SIZE` in `js/board_size.js`. The code works on any board the stylesheet has tile positions for, which is up to 8 columns and 6 rows. Each board size keeps its own best score, and a saved game is loaded on the board it was saved with.
-
-The board is sized to fit the window. In a wide window it is as tall as the window and in the middle of it, with the title, the scores, the New Game button and the instructions in the middle of the space at its left. In a narrow window, as in the screenshot, the title, the scores and the New Game button are above the board, and the instructions are below it. The pause button is always at the board's top right corner.
+The board has 4 columns and 6 rows, and starts empty. The game now plays more
+like tetris and the numbers spawn at the top and fall down to the bottom. I
+removed the up key, but otherwise the game plays exactly the same as the
+previous 2048 game.
 
 ## Playing the game locally
-The game is written as ES modules, which browsers only load from a web server, so opening `index.html` straight from disk doesn't work. Get the code and serve the folder instead, for example with Python:
+To play the game locally, get the code and serve the folder over http: for example with Python
 
 ```sh
 git clone https://github.com/yhu9/2048.git
