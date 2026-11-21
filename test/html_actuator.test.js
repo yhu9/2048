@@ -7,11 +7,12 @@ import { Page, indexHtml } from "./helpers/page.js";
 
 function setup() {
   const page = new Page({ html: indexHtml() });
-  const grid = new Grid(4);
+  const grid = new Grid(4, 4);
   const actuator = new HTMLActuator();
 
   return {
     page,
+    actuator,
 
     addTile(x, y, value) {
       const tile = new Tile({ x, y }, value);
@@ -114,6 +115,21 @@ function showsScoreAndBestScore() {
   assert.equal(document.querySelector(".best-container").textContent, "2048");
 }
 
+function drawsTheBoard() {
+  const t = setup();
+  const { document } = t.page;
+
+  t.actuator.showBoard({ columns: 6, rows: 5 });
+  t.actuator.showBoard({ columns: 7, rows: 4 });
+
+  const rows = [...document.querySelectorAll(".grid-container .grid-row")];
+  assert.deepEqual(rows.map((row) => row.children.length), [7, 7, 7, 7]);
+  assert.equal(
+    document.querySelector(".container").style.getPropertyValue("--columns"),
+    "7"
+  );
+}
+
 function htmlActuatorTests() {
   it("draws each tile with its value and position",
     drawsTilesWithValueAndPosition);
@@ -124,6 +140,7 @@ function htmlActuatorTests() {
     marksMergedTiles);
   it("marks tiles above 2048 as super", marksSuperTiles);
   it("shows the score and the best score", showsScoreAndBestScore);
+  it("draws a board of any size, as wide as its columns", drawsTheBoard);
 }
 
 describe("HTMLActuator", htmlActuatorTests);

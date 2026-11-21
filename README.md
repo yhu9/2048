@@ -26,6 +26,18 @@ Many thanks to [rayhaanj](https://github.com/rayhaanj), [Mechazawa](https://gith
 
 That screenshot is fake, by the way. I never reached 2048 :smile:
 
+## How to play
+The board has 4 columns and 6 rows. One tile at a time comes in at the top and falls one cell every half second.
+
+- **Left** and **right** slide the landed tiles as far as they can go, and then steer the falling tile one cell. Steered into a tile of the same number, it merges with it and has landed.
+- **Down** drops every tile as far down as it can go, and lands the falling tile.
+- **Up** does nothing.
+
+A falling tile merges with a tile of the same number below it. When it can't go any further it lands, and the next tile comes in at the top. While the top row is full no tile comes in, but you can still move the landed tiles to make room. The game is over when the top row is full and no move is left.
+
+## Board sizes
+The game is played on 4 columns and 6 rows, set by `DEFAULT_BOARD_SIZE` in `js/board_size.js`. The code works on any board the stylesheet has tile positions for, which is up to 8 columns and 6 rows. Each board size keeps its own best score, and a saved game is loaded on the board it was saved with.
+
 ## Playing the game locally
 The game is written as ES modules, which browsers only load from a web server, so opening `index.html` straight from disk doesn't work. Serve the folder instead, for example with Python:
 

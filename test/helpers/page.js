@@ -32,8 +32,37 @@ export function Page(options = {}) {
     this.frames.push(callback);
   };
 
+  // The game's clock doesn't run by itself either. tick() runs what the
+  // page asked to run on every tick.
+  this.intervals = [];
+  this.window.setInterval = (callback) => {
+    this.intervals.push(callback);
+  };
+
   globalThis.window = this.window;
   globalThis.document = this.document;
+}
+
+// Let the game's clock tick once, then draw the page
+Page.prototype.tick = function tick() {
+  this.intervals.forEach((callback) => callback());
+  this.flushFrames();
+};
+
+let pagesOpened = 0;
+
+// Open index.html and start the game from its entry module. Pass the
+// localStorage of an earlier page as `storage` to reload it.
+export async function openGamePage(storage) {
+  const page = new Page({ html: indexHtml(), storage });
+
+  // A module only runs the first time it is imported. A new query string
+  // makes the entry module run again and start a game on this page.
+  pagesOpened += 1;
+  await import(`../../js/application.js?page=${pagesOpened}`);
+
+  page.flushFrames();
+  return page;
 }
 
 // Run the queued animation frames, including any they queue themselves

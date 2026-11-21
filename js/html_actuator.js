@@ -1,7 +1,9 @@
-const WINNING_VALUE = 2048;
+import { WINNING_VALUE } from "./rules.js";
 
 export class HTMLActuator {
   constructor() {
+    this.container = document.querySelector(".container");
+    this.gridContainer = document.querySelector(".grid-container");
     this.tileContainer = document.querySelector(".tile-container");
     this.scoreContainer = document.querySelector(".score-container");
     this.bestContainer = document.querySelector(".best-container");
@@ -10,8 +12,31 @@ export class HTMLActuator {
     this.score = 0;
   }
 
+  // Draw an empty board of the given size
+  showBoard({ columns, rows }) {
+    // The stylesheet makes the page as wide as the board from --columns
+    this.container.style.setProperty("--columns", columns);
+
+    this.clearContainer(this.gridContainer);
+
+    for (let y = 0; y < rows; y += 1) {
+      const row = document.createElement("div");
+      row.classList.add("grid-row");
+
+      for (let x = 0; x < columns; x += 1) {
+        const cell = document.createElement("div");
+        cell.classList.add("grid-cell");
+        row.appendChild(cell);
+      }
+
+      this.gridContainer.appendChild(row);
+    }
+  }
+
   actuate(grid, metadata) {
     window.requestAnimationFrame(() => {
+      this.movingTile = metadata.movingTile;
+
       this.clearContainer(this.tileContainer);
 
       grid.eachCell((x, y, tile) => {
@@ -59,6 +84,11 @@ export class HTMLActuator {
 
     if (tile.value > WINNING_VALUE) {
       classes.push("tile-super");
+    }
+
+    // The tile that is still on its way down
+    if (tile === this.movingTile) {
+      classes.push("tile-moving");
     }
 
     this.applyClasses(wrapper, classes);
@@ -113,6 +143,12 @@ export class HTMLActuator {
 
       this.scoreContainer.appendChild(addition);
     }
+  }
+
+  // Set the score without the "+" pop-up that updateScore shows for new
+  // points
+  setScore(score) {
+    this.score = score;
   }
 
   updateBestScore(bestScore) {

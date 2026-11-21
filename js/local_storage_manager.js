@@ -1,3 +1,5 @@
+import { isClassicBoardSize } from "./board_size.js";
+
 const BEST_SCORE_KEY = "bestScore";
 const GAME_STATE_KEY = "gameState";
 
@@ -33,13 +35,25 @@ function localStorageSupported() {
   }
 }
 
-// A saved grid can be used if its cells form a complete square: as many
-// cells in every column as there are columns.
-function isCompleteGrid(grid) {
-  const cells = grid && grid.cells;
+// Every board size has its own best score. The classic 4x4 board keeps the
+// key it always had, so players keep the best score they already have.
+function bestScoreKey(boardSize) {
+  if (isClassicBoardSize(boardSize)) {
+    return BEST_SCORE_KEY;
+  }
+  return `${BEST_SCORE_KEY}-${boardSize.columns}x${boardSize.rows}`;
+}
 
-  return Array.isArray(cells) && cells.every((column) => (
-    Array.isArray(column) && column.length === cells.length
+// A saved grid can be used if its cells are complete: as many columns as
+// the grid says, with as many cells in each as it has rows. Games saved
+// before boards could be rectangular have one size for both.
+function isCompleteGrid(grid) {
+  if (!grid || !Array.isArray(grid.cells)) return false;
+
+  const { size, columns = size, rows = size, cells } = grid;
+
+  return cells.length === columns && cells.every((column) => (
+    Array.isArray(column) && column.length === rows
   ));
 }
 
@@ -50,12 +64,12 @@ export class LocalStorageManager {
       : new MemoryStorage();
   }
 
-  getBestScore() {
-    return Number(this.storage.getItem(BEST_SCORE_KEY)) || 0;
+  getBestScore(boardSize) {
+    return Number(this.storage.getItem(bestScoreKey(boardSize))) || 0;
   }
 
-  setBestScore(score) {
-    this.storage.setItem(BEST_SCORE_KEY, score);
+  setBestScore(score, boardSize) {
+    this.storage.setItem(bestScoreKey(boardSize), score);
   }
 
   // The saved game, or null if there is none or it can't be used

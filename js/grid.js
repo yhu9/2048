@@ -1,11 +1,12 @@
 import { Tile } from "./tile.js";
 
-// A square board, indexed cells[x][y]: x is the column, counted from the
-// left, and y is the row, counted from the top.
+// A board of columns x rows cells, indexed cells[x][y]: x is the column,
+// counted from the left, and y is the row, counted from the top.
 export class Grid {
   // previousCells: the cells of a serialized grid, to restore it
-  constructor(size, previousCells) {
-    this.size = size;
+  constructor(columns, rows, previousCells) {
+    this.columns = columns;
+    this.rows = rows;
     this.cells = previousCells ? this.fromState(previousCells) : this.empty();
   }
 
@@ -13,10 +14,10 @@ export class Grid {
   build(cellAt) {
     const cells = [];
 
-    for (let x = 0; x < this.size; x += 1) {
+    for (let x = 0; x < this.columns; x += 1) {
       cells.push([]);
 
-      for (let y = 0; y < this.size; y += 1) {
+      for (let y = 0; y < this.rows; y += 1) {
         cells[x].push(cellAt(x, y));
       }
     }
@@ -59,8 +60,8 @@ export class Grid {
 
   // Call callback for every cell, column by column and top to bottom
   eachCell(callback) {
-    for (let x = 0; x < this.size; x += 1) {
-      for (let y = 0; y < this.size; y += 1) {
+    for (let x = 0; x < this.columns; x += 1) {
+      for (let y = 0; y < this.rows; y += 1) {
         callback(x, y, this.cells[x][y]);
       }
     }
@@ -91,13 +92,14 @@ export class Grid {
   }
 
   withinBounds(position) {
-    return position.x >= 0 && position.x < this.size &&
-           position.y >= 0 && position.y < this.size;
+    return position.x >= 0 && position.x < this.columns &&
+           position.y >= 0 && position.y < this.rows;
   }
 
   serialize() {
     return {
-      size: this.size,
+      columns: this.columns,
+      rows: this.rows,
       cells: this.build((x, y) => {
         const tile = this.cells[x][y];
         return tile ? tile.serialize() : null;
