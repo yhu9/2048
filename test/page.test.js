@@ -6,13 +6,11 @@ import assert from "node:assert";
 import { savedGame } from "./helpers/game.js";
 import { openGamePage as openPage } from "./helpers/page.js";
 
-const KEY = { right: "ArrowRight", down: "ArrowDown" };
+const KEY = { right: "ArrowRight", down: "ArrowDown", p: "p" };
 const EMPTY = [0, 0, 0, 0];
 
 // The page starts the real game, which uses Math.random. Fixing it at 0
-// makes every new tile a 2 in the first free cell: the two tiles a game
-// starts with at the top of the left column, and the moving tile next to
-// them in the top row.
+// makes every new tile a 2 in the first free cell of the top row.
 mock.method(Math, "random", () => 0);
 
 // A saved game on the default board, 4 columns and 6 rows, with a moving
@@ -48,12 +46,11 @@ function message(page) {
   return page.document.querySelector(".game-message");
 }
 
-async function startsWithTwoTilesAndAMovingTile() {
+async function startsWithOnlyAMovingTile() {
   const page = await openPage();
 
-  // Two tiles, and a third one that is moving
-  assert.equal(count(page, ".tile"), 3);
-  assert.equal(count(page, ".tile-2.tile-moving.tile-position-2-1"), 1);
+  assert.equal(count(page, ".tile"), 1);
+  assert.equal(count(page, ".tile-2.tile-moving.tile-position-1-1"), 1);
   assert.equal(text(page, ".score-container"), "0");
 }
 
@@ -61,30 +58,81 @@ async function movesTheTileOnEveryTick() {
   const page = await openPage();
 
   page.tick();
-  assert.equal(count(page, ".tile-moving.tile-position-2-2"), 1);
+  assert.equal(count(page, ".tile-moving.tile-position-1-2"), 1);
 
   // 4 more ticks take it down the rest of the 6 rows
   for (let ticks = 0; ticks < 4; ticks += 1) {
     page.tick();
   }
-  assert.equal(count(page, ".tile-moving.tile-position-2-6"), 1);
+  assert.equal(count(page, ".tile-moving.tile-position-1-6"), 1);
 
   // At the bottom edge the tile lands, and a new one comes in at the top
   page.tick();
-  assert.equal(count(page, ".tile"), 4);
-  assert.equal(count(page, ".tile-position-2-6"), 1);
-  assert.equal(count(page, ".tile-moving.tile-position-2-1"), 1);
+  assert.equal(count(page, ".tile"), 2);
+  assert.equal(count(page, ".tile-position-1-6"), 1);
+  assert.equal(count(page, ".tile-moving.tile-position-1-1"), 1);
 }
 
 async function steersAndLandsWithTheArrowKeys() {
   const page = await openPage();
 
   press(page, KEY.right);
-  assert.equal(count(page, ".tile-moving.tile-position-3-1"), 1);
+  assert.equal(count(page, ".tile-moving.tile-position-2-1"), 1);
 
   press(page, KEY.down);
-  assert.equal(count(page, ".tile-position-3-6"), 1);
+  assert.equal(count(page, ".tile-position-2-6"), 1);
   assert.equal(count(page, ".tile-moving.tile-position-1-1"), 1);
+}
+
+// While the game is paused the clock is stopped and the keys move nothing.
+// The pause button then shows a play icon.
+async function pausesAndGoesOn() {
+  const page = await openPage();
+  const button = page.document.querySelector(".pause-button");
+  const still = () => count(page, ".tile") === 1 &&
+    count(page, ".tile-moving.tile-position-1-1") === 1;
+
+  click(page, ".pause-button");
+  assert.ok(button.classList.contains("paused"));
+  assert.equal(button.getAttribute("aria-label"), "Play");
+
+  page.tick();
+  press(page, KEY.right);
+  press(page, KEY.down);
+  assert.ok(still());
+  assert.equal(page.intervals.size, 0);
+
+  // The clock starts again, so the next tick is a full interval away
+  click(page, ".pause-button");
+  assert.ok(!button.classList.contains("paused"));
+  assert.equal(button.getAttribute("aria-label"), "Pause");
+  assert.equal(page.intervals.size, 1);
+
+  page.tick();
+  assert.equal(count(page, ".tile-moving.tile-position-1-2"), 1);
+
+  // The P key does the same as the button
+  press(page, KEY.p);
+  assert.ok(button.classList.contains("paused"));
+  page.tick();
+  assert.equal(count(page, ".tile-moving.tile-position-1-2"), 1);
+
+  press(page, KEY.p);
+  page.tick();
+  assert.equal(count(page, ".tile-moving.tile-position-1-3"), 1);
+}
+
+// New Game while paused starts a game that runs, on one clock
+async function startsANewGameFromAPause() {
+  const page = await openPage();
+  const button = page.document.querySelector(".pause-button");
+
+  press(page, KEY.p);
+  click(page, ".restart-button");
+  assert.ok(!button.classList.contains("paused"));
+
+  page.tick();
+  assert.equal(count(page, ".tile-moving.tile-position-1-2"), 1);
 }
 
 async function mergesAndScores() {
@@ -106,8 +154,8 @@ async function restoresGameAfterReload() {
   const cells = (row) => second.document
     .querySelectorAll(`.grid-row:${row} .grid-cell`).length;
 
-  assert.equal(count(second, ".tile"), 3);
-  assert.equal(count(second, ".tile-moving.tile-position-2-3"), 1);
+  assert.equal(count(second, ".tile"), 1);
+  assert.equal(count(second, ".tile-moving.tile-position-1-3"), 1);
   assert.equal(second.document.querySelectorAll(".grid-row").length, 6);
   assert.equal(cells("first-child"), 4);
 }
@@ -132,7 +180,7 @@ async function newGameKeepsBestScore() {
 
   click(page, ".restart-button");
 
-  assert.equal(count(page, ".tile"), 3);
+  assert.equal(count(page, ".tile"), 1);
   assert.equal(text(page, ".score-container"), "0");
   assert.equal(text(page, ".best-container"), "4");
 }
@@ -171,15 +219,17 @@ async function showsGameOverAndTriesAgain() {
   click(page, ".retry-button");
 
   assert.ok(!message(page).classList.contains("game-over"));
-  assert.equal(count(page, ".tile"), 3);
+  assert.equal(count(page, ".tile"), 1);
 }
 
 function pageTests() {
-  it("starts a game with two tiles and a moving tile",
-    startsWithTwoTilesAndAMovingTile);
+  it("starts a game with only a moving tile", startsWithOnlyAMovingTile);
   it("moves the tile on every tick", movesTheTileOnEveryTick);
   it("steers and lands the tile with the arrow keys",
     steersAndLandsWithTheArrowKeys);
+  it("pauses and goes on with the pause button and the P key",
+    pausesAndGoesOn);
+  it("starts a new game that runs from a pause", startsANewGameFromAPause);
   it("merges tiles and adds them to the score", mergesAndScores);
   it("restores the game after a reload", restoresGameAfterReload);
   it("shows the score pop-up only for new points",

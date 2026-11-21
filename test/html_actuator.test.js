@@ -124,10 +124,23 @@ function drawsTheBoard() {
 
   const rows = [...document.querySelectorAll(".grid-container .grid-row")];
   assert.deepEqual(rows.map((row) => row.children.length), [7, 7, 7, 7]);
-  assert.equal(
-    document.querySelector(".container").style.getPropertyValue("--columns"),
-    "7"
-  );
+  const { style } = document.querySelector(".container");
+  assert.equal(style.getPropertyValue("--columns"), "7");
+  assert.equal(style.getPropertyValue("--rows"), "4");
+}
+
+// The button shows what pressing it does: pause, or play when paused
+function showsWhetherTheGameIsPaused() {
+  const t = setup();
+  const button = t.page.document.querySelector(".pause-button");
+
+  t.actuator.setPaused(true);
+  assert.ok(button.classList.contains("paused"));
+  assert.equal(button.getAttribute("aria-label"), "Play");
+
+  t.actuator.setPaused(false);
+  assert.ok(!button.classList.contains("paused"));
+  assert.equal(button.getAttribute("aria-label"), "Pause");
 }
 
 function htmlActuatorTests() {
@@ -140,7 +153,10 @@ function htmlActuatorTests() {
     marksMergedTiles);
   it("marks tiles above 2048 as super", marksSuperTiles);
   it("shows the score and the best score", showsScoreAndBestScore);
-  it("draws a board of any size, as wide as its columns", drawsTheBoard);
+  it("draws a board of any size and tells the stylesheet its size",
+    drawsTheBoard);
+  it("turns the pause button into a play button while paused",
+    showsWhetherTheGameIsPaused);
 }
 
 describe("HTMLActuator", htmlActuatorTests);

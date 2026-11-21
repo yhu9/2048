@@ -17,6 +17,7 @@ const MOVE_KEYS = {
 };
 
 const RESTART_KEY = "r";
+const PAUSE_KEY = "p";
 
 // A swipe has to be longer than this many pixels to count as a move.
 const MIN_SWIPE_DISTANCE = 10;
@@ -51,6 +52,7 @@ export class KeyboardInputManager {
     this.bindButtonPress(".retry-button", this.restart);
     this.bindButtonPress(".restart-button", this.restart);
     this.bindButtonPress(".keep-playing-button", this.keepPlaying);
+    this.bindButtonPress(".pause-button", this.pause);
 
     this.listenForSwipes();
   }
@@ -68,6 +70,8 @@ export class KeyboardInputManager {
       this.emit("move", MOVE_KEYS[key]);
     } else if (key === RESTART_KEY) {
       this.restart(event);
+    } else if (key === PAUSE_KEY) {
+      this.pause(event);
     }
   }
 
@@ -120,6 +124,12 @@ export class KeyboardInputManager {
   keepPlaying(event) {
     event.preventDefault();
     this.emit("keepPlaying");
+  }
+
+  // Pauses the game, or goes on with it if it is paused
+  pause(event) {
+    event.preventDefault();
+    this.emit("pause");
   }
 
   bindButtonPress(selector, handler) {

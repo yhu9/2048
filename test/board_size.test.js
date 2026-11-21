@@ -63,7 +63,7 @@ async function startsOnFourColumnsAndSixRows() {
   const page = await openPage();
 
   assert.deepEqual(gridShape(page), [4, 4, 4, 4, 4, 4]);
-  assert.equal(count(page, ".tile"), 3);
+  assert.equal(count(page, ".tile"), 1);
 }
 
 async function startsNewGamesOnTheDefaultBoard() {
@@ -73,7 +73,7 @@ async function startsNewGamesOnTheDefaultBoard() {
 
   press(page, KEY.r);
   assert.deepEqual(gridShape(page), [4, 4, 4, 4, 4, 4]);
-  assert.equal(count(page, ".tile"), 3);
+  assert.equal(count(page, ".tile"), 1);
 
   // Game over on another board, then Try again
   const stuck = await openPage(savedGame(STUCK_WIDE, {
@@ -218,7 +218,8 @@ async function keepsABestScorePerBoardSize() {
   click(page, ".restart-button");
   assert.equal(bestScore(page), "0");
 
-  // The two 2s the game starts with are in the left column, and merge
+  // The first 2 lands at the bottom, and the second one merges with it
+  press(page, KEY.down);
   press(page, KEY.down);
   assert.equal(bestScore(page), "4");
 

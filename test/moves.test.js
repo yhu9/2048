@@ -301,18 +301,16 @@ function staysTheSameWhenTilesOnlySlide() {
 
 // New tiles
 
-function startsWithTwoTilesAndAMovingTile() {
+function startsWithOnlyAMovingTile() {
   const game = newGame();
 
-  // The random source returns 0: every tile is a 2 in the first free cell
-  assert.deepEqual(board(game), [[2, 2, 0, 0], [2, 0, 0, 0], EMPTY, EMPTY]);
-  assert.deepEqual(movingTile(game), [1, 0]);
+  // The random source returns 0: a 2 in the first cell of the top row
+  assert.deepEqual(board(game), [[2, 0, 0, 0], EMPTY, EMPTY, EMPTY]);
+  assert.deepEqual(movingTile(game), [0, 0]);
 
-  // 0.99 makes every tile a 4 in the last free cell it can go to. The two
-  // starting tiles can be anywhere, the moving tile only in the top row
+  // 0.99 makes it a 4 in the last cell of the top row
   const last = newGame({ random: () => 0.99 });
-  assert.deepEqual(board(last),
-    [[0, 0, 0, 4], EMPTY, [0, 0, 0, 4], [0, 0, 0, 4]]);
+  assert.deepEqual(board(last), [[0, 0, 0, 4], EMPTY, EMPTY, EMPTY]);
   assert.deepEqual(movingTile(last), [3, 0]);
 }
 
@@ -407,8 +405,8 @@ function scoreTests() {
 }
 
 function newTileTests() {
-  it("starts with two tiles anywhere and a moving tile at the top",
-    startsWithTwoTilesAndAMovingTile);
+  it("starts with only a moving tile, in the top row",
+    startsWithOnlyAMovingTile);
   it("picks the column and the value at random",
     picksTheColumnAndValueAtRandom);
   it("adds a tile when the moving tile lands",

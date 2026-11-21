@@ -41,26 +41,12 @@ function spawnsNothingWhenTheTopRowIsFull() {
   assert.equal(grid.availableCells().length, 20);
 }
 
-// The tiles a game starts with can go anywhere on the board
-function spawnsStartTilesAnywhere() {
-  const grid = new Grid(4, 6);
-
-  // 0.95 makes the tile a 4. Then 0.99 picks the last of the 24 free cells
-  const tile = new TileSpawner(sequence(0.95, 0.99)).spawnAnywhere(grid);
-
-  assert.equal(tile.value, 4);
-  assert.deepEqual({ x: tile.x, y: tile.y }, { x: 3, y: 5 });
-  assert.equal(grid.cellContent({ x: 3, y: 5 }), tile);
-}
-
 function tileSpawnerTests() {
   it("spawns in the top row, value first and then column",
     spawnsInTheTopRow);
   it("skips the cells that are taken", skipsTakenCells);
   it("spawns nothing when the top row is full",
     spawnsNothingWhenTheTopRowIsFull);
-  it("spawns the starting tiles anywhere on the board",
-    spawnsStartTilesAnywhere);
 }
 
 describe("TileSpawner", tileSpawnerTests);

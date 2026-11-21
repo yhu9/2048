@@ -1,8 +1,7 @@
 import { CHANCE_OF_TWO } from "./rules.js";
 import { Tile } from "./tile.js";
 
-// Brings new tiles into the game: the moving tiles, in the top row of the
-// board, and the tiles a game starts with, anywhere on it.
+// Brings new tiles into the game. They come in at the top row of the board.
 export class TileSpawner {
   // random: a function returning a number in [0, 1), like Math.random (the
   // default)
@@ -23,9 +22,12 @@ export class TileSpawner {
     return cells;
   }
 
-  // Add a new tile to one of the given cells and return it, or return null
-  // when there are none. The value is chosen before the cell.
-  spawnIn(grid, cells) {
+  // Add a new tile to a free cell of the grid's top row and return it.
+  // Returns null when that row is full. The value is chosen before the
+  // cell.
+  spawn(grid) {
+    const cells = this.freeCells(grid);
+
     if (!cells.length) return null;
 
     const value = this.random() < CHANCE_OF_TWO ? 2 : 4;
@@ -34,17 +36,5 @@ export class TileSpawner {
     const tile = new Tile(cell, value);
     grid.insertTile(tile);
     return tile;
-  }
-
-  // Add a new tile to a free cell of the grid's top row and return it.
-  // Returns null when that row is full.
-  spawn(grid) {
-    return this.spawnIn(grid, this.freeCells(grid));
-  }
-
-  // Add a new tile to a free cell anywhere on the grid and return it, the
-  // way a game gets its first tiles. Returns null when the grid is full.
-  spawnAnywhere(grid) {
-    return this.spawnIn(grid, grid.availableCells());
   }
 }

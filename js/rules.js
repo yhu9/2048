@@ -8,8 +8,4 @@ export const WINNING_VALUE = 2048;
 export const CHANCE_OF_TWO = 0.9;
 
 // Milliseconds between two ticks
-export const TICK_INTERVAL = 500;
-
-// A new game starts with this many tiles on the board, before the moving
-// tile comes in.
-export const START_TILES = 2;
+export const TICK_INTERVAL = 750;

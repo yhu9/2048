@@ -19,6 +19,7 @@ FakeInput.prototype.emit = function emit(event, data) {
 function FakeActuator() {}
 FakeActuator.prototype.showBoard = function showBoard() {};
 FakeActuator.prototype.setScore = function setScore() {};
+FakeActuator.prototype.setPaused = function setPaused() {};
 FakeActuator.prototype.actuate = function actuate() {};
 FakeActuator.prototype.continueGame = function continueGame() {};
 

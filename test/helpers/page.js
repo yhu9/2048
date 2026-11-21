@@ -33,10 +33,16 @@ export function Page(options = {}) {
   };
 
   // The game's clock doesn't run by itself either. tick() runs what the
-  // page asked to run on every tick.
-  this.intervals = [];
+  // page asked to run on every tick, until it is cleared.
+  this.intervals = new Map();
+  let timers = 0;
   this.window.setInterval = (callback) => {
-    this.intervals.push(callback);
+    timers += 1;
+    this.intervals.set(timers, callback);
+    return timers;
+  };
+  this.window.clearInterval = (id) => {
+    this.intervals.delete(id);
   };
 
   globalThis.window = this.window;
@@ -45,7 +51,7 @@ export function Page(options = {}) {
 
 // Let the game's clock tick once, then draw the page
 Page.prototype.tick = function tick() {
-  this.intervals.forEach((callback) => callback());
+  [...this.intervals.values()].forEach((callback) => callback());
   this.flushFrames();
 };
 

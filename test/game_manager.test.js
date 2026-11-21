@@ -56,16 +56,82 @@ function lostGame() {
   return landedGame(STUCK);
 }
 
-// Starting the game with two tiles and a third, moving tile
-function startsWithTwoTilesAndAMovingTile() {
+// Starting the game with an empty board and the first moving tile
+function startsWithOnlyAMovingTile() {
   const game = newGame();
 
-  // The random source returns 0: two 2s at the top of the left column, and
-  // the moving 2 in the first free cell of the top row
-  assert.deepEqual(board(game), [[2, 2, 0, 0], [2, 0, 0, 0], EMPTY, EMPTY]);
-  assert.deepEqual(movingTile(game), [1, 0]);
+  // The random source returns 0: a 2 in the first cell of the top row
+  assert.deepEqual(board(game), [[2, 0, 0, 0], EMPTY, EMPTY, EMPTY]);
+  assert.deepEqual(movingTile(game), [0, 0]);
   assert.equal(game.score, 0);
   assert.ok(!game.over);
+  assert.ok(!game.paused);
+}
+
+// Pausing
+
+// Nothing moves and no tile comes in while the game is paused
+function ignoresMovesAndTicksWhilePaused() {
+  const rows = [[0, 2, 0, 0], EMPTY, EMPTY, [2, 0, 0, 0]];
+  const game = newGame();
+  setBoard(game, rows, [1, 0]);
+
+  game.inputManager.emit("pause");
+  game.tick();
+  game.move(RIGHT);
+  game.move(DOWN);
+
+  assert.ok(game.paused);
+  assert.deepEqual(board(game), rows);
+  assert.deepEqual(movingTile(game), [1, 0]);
+}
+
+function goesOnWhenPauseIsPressedAgain() {
+  const game = gameWithBoard([[0, 2, 0, 0], EMPTY, EMPTY, EMPTY], [1, 0]);
+
+  game.togglePause();
+  game.togglePause();
+  game.tick();
+  game.move(RIGHT);
+
+  assert.ok(!game.paused);
+  assert.deepEqual(movingTile(game), [2, 1]);
+}
+
+function restartsUnpaused() {
+  const game = newGame();
+
+  game.togglePause();
+  game.restart();
+  game.tick();
+
+  assert.ok(!game.paused);
+  assert.deepEqual(movingTile(game), [0, 1]);
+}
+
+// There is nothing to pause once the game has ended
+function cannotPauseAGameThatHasEnded() {
+  const lost = lostGame();
+  lost.togglePause();
+  assert.ok(!lost.paused);
+
+  const won = wonGame();
+  won.togglePause();
+  assert.ok(!won.paused);
+
+  won.continuePlaying();
+  won.togglePause();
+  assert.ok(won.paused);
+}
+
+// A pause isn't saved: a reloaded game is running
+function savesNoPause() {
+  const game = newGame();
+
+  game.togglePause();
+
+  const saved = game.storageManager.getGameState();
+  assert.ok(!Object.hasOwn(saved, "paused"));
 }
 
 // Winning a game
@@ -211,8 +277,8 @@ function restartsWithAFreshBoard() {
   game.restart();
 
   assert.equal(game.score, 0);
-  assert.equal(tileCount(game), 3);
-  assert.deepEqual(movingTile(game), [1, 0]);
+  assert.equal(tileCount(game), 1);
+  assert.deepEqual(movingTile(game), [0, 0]);
 }
 
 // Best scores
@@ -261,7 +327,7 @@ function savesAfterEveryTick() {
   game.tick();
 
   const saved = game.storageManager.getGameState();
-  assert.deepEqual(saved.movingTile, { x: 1, y: 1 });
+  assert.deepEqual(saved.movingTile, { x: 0, y: 1 });
   assert.deepEqual(saved, game.serialize());
 }
 
@@ -349,9 +415,18 @@ function savedGameTests() {
   it("is cleared on game over", clearsSavedGameOnGameOver);
 }
 
+function pauseTests() {
+  it("ignores moves and ticks while paused", ignoresMovesAndTicksWhilePaused);
+  it("goes on when pause is pressed again", goesOnWhenPauseIsPressedAgain);
+  it("starts a new game unpaused", restartsUnpaused);
+  it("can't pause a game that has ended", cannotPauseAGameThatHasEnded);
+  it("doesn't save the pause", savesNoPause);
+}
+
 function gameManagerTests() {
-  it("starts with two tiles, a moving tile and a score of 0",
-    startsWithTwoTilesAndAMovingTile);
+  it("starts with only a moving tile and a score of 0",
+    startsWithOnlyAMovingTile);
+  describe("pausing", pauseTests);
   describe("winning", winningTests);
   describe("game over", gameOverTests);
   it("restarts with a fresh board", restartsWithAFreshBoard);

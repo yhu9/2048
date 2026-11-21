@@ -4,12 +4,12 @@ import { Grid } from "./grid.js";
 import {
   advanceTile, mergeIntoNext, movesAvailable, slideTiles, stepTile
 } from "./moves.js";
-import { START_TILES } from "./rules.js";
 import { TileSpawner } from "./tile_spawner.js";
 
 // Runs a game. One tile at a time is the moving tile: it comes in at the
 // top and takes a step down on every tick, until it can't go further and
-// lands. Every other tile has landed.
+// lands. Every other tile has landed. While the game is paused nothing
+// moves and no tile comes in.
 export class GameManager {
   // defaultBoardSize: the board size new games are played on (see
   // board_size.js)
@@ -27,9 +27,9 @@ export class GameManager {
     this.inputManager.on("move", (direction) => this.move(direction));
     this.inputManager.on("restart", () => this.restart());
     this.inputManager.on("keepPlaying", () => this.continuePlaying());
+    this.inputManager.on("pause", () => this.togglePause());
 
     this.setup();
-    this.clock.start();
   }
 
   // The size of the board in play
@@ -56,6 +56,28 @@ export class GameManager {
     return this.over || (this.won && !this.keepPlaying);
   }
 
+  // Pause the game, or go on with a paused game. A game that has ended
+  // can't be paused.
+  togglePause() {
+    if (this.isGameTerminated()) return;
+
+    this.setPaused(!this.paused);
+  }
+
+  // The clock only runs while the game isn't paused, so the first tick
+  // after a pause comes a full interval later.
+  setPaused(paused) {
+    this.paused = paused;
+
+    if (paused) {
+      this.clock.stop();
+    } else {
+      this.clock.start();
+    }
+
+    this.actuator.setPaused(paused);
+  }
+
   // The columns and rows of a saved grid. Games saved before boards could
   // be rectangular only have a size.
   savedBoardSize({ size, columns = size, rows = size }) {
@@ -63,7 +85,8 @@ export class GameManager {
   }
 
   // Continue the saved game if there is one, on the board it was saved
-  // with. Otherwise start a new game on the default board.
+  // with. Otherwise start a new game on the default board. Either way the
+  // game is running, not paused.
   setup() {
     const savedState = this.storageManager.getGameState();
 
@@ -89,16 +112,14 @@ export class GameManager {
       this.won = false;
       this.keepPlaying = false;
       this.movingTile = null;
-
-      // A new game starts with two tiles anywhere on the board
-      for (let i = 0; i < START_TILES; i += 1) {
-        this.spawner.spawnAnywhere(this.grid);
-      }
     }
 
-    // Then the moving tile comes in. A game that was saved before tiles
-    // moved by themselves gets one too.
+    // A new game starts with an empty board, and its first tile comes in.
+    // So does a tile for a game that was saved before tiles moved by
+    // themselves.
     this.settle();
+
+    this.setPaused(false);
 
     this.actuator.showBoard(this.boardSize());
 
@@ -140,7 +161,7 @@ export class GameManager {
 
   // One step of the clock for the moving tile
   tick() {
-    if (this.isGameTerminated() || !this.movingTile) return;
+    if (this.isGameTerminated() || this.paused || !this.movingTile) return;
 
     const result = advanceTile(this.grid, this.movingTile);
     this.addOutcome(result);
@@ -156,7 +177,8 @@ export class GameManager {
   //   the moving tile one cell, or into an equal tile next to it
   // - up moves nothing, because tiles only ever go down
   move(direction) {
-    if (this.isGameTerminated()) return; // Don't do anything if it's over
+    // Don't do anything if it's over or paused
+    if (this.isGameTerminated() || this.paused) return;
 
     if (direction === Direction.up) return;
 

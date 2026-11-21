@@ -8,14 +8,17 @@ export class HTMLActuator {
     this.scoreContainer = document.querySelector(".score-container");
     this.bestContainer = document.querySelector(".best-container");
     this.messageContainer = document.querySelector(".game-message");
+    this.pauseButton = document.querySelector(".pause-button");
 
     this.score = 0;
   }
 
   // Draw an empty board of the given size
   showBoard({ columns, rows }) {
-    // The stylesheet makes the page as wide as the board from --columns
+    // The stylesheet sizes the cells from these, so that the board fits
+    // the window
     this.container.style.setProperty("--columns", columns);
+    this.container.style.setProperty("--rows", rows);
 
     this.clearContainer(this.gridContainer);
 
@@ -56,6 +59,16 @@ export class HTMLActuator {
         }
       }
     });
+  }
+
+  // Show whether the game is paused: the pause button's icon becomes a play
+  // icon, because pressing it then goes on with the game.
+  setPaused(paused) {
+    const label = paused ? "Play" : "Pause";
+
+    this.pauseButton.classList.toggle("paused", paused);
+    this.pauseButton.setAttribute("aria-label", label);
+    this.pauseButton.setAttribute("title", `${label} (P)`);
   }
 
   // Continues the game (both restart and keep playing)
