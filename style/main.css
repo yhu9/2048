@@ -57,10 +57,13 @@ html, body {
   order: 2;
   display: flex;
   margin: 10px 0;
+  padding-right: 45px;
 }
 
-.game-container {
+.board-area {
   order: 3;
+  position: relative;
+  flex: none;
 }
 
 .about {
@@ -232,11 +235,13 @@ hr {
   color: #f9f6f2;
   height: 40px;
   line-height: 42px;
-  position: relative;
+  position: absolute;
+  right: 0;
+  bottom: 100%;
   box-sizing: border-box;
   width: 40px;
   padding: 0;
-  margin-left: 5px;
+  margin-bottom: 10px;
 }
 .pause-button:before {
   content: "";
@@ -260,7 +265,6 @@ hr {
 
 .game-container {
   position: relative;
-  flex: none;
   width: var(--board-width);
   padding: var(--gap);
   cursor: default;
@@ -873,21 +877,34 @@ hr {
   .container {
     --room-x: calc(100vw - 548px);
     --room-y: calc(var(--page-height) - 24px);
+    --beside: calc((100vw - var(--board-width)) / 2);
+    --panel-width: min(360px, calc(var(--beside) - 24px));
+    --panel-free: calc((var(--beside) - var(--panel-width)) / 2);
     justify-content: center;
+  }
+  .pause-button {
+    top: 0;
+    right: auto;
+    bottom: auto;
+    left: 100%;
+    margin: 0 0 0 10px;
   }
   .info {
     display: block;
     position: absolute;
     top: 12px;
-    right: 12px;
+    left: var(--panel-free);
     box-sizing: border-box;
-    width: min(360px, calc((100vw - var(--board-width)) / 2 - 24px));
+    width: var(--panel-width);
     max-height: calc(var(--page-height) - 24px);
     overflow-y: auto;
   }
   .heading, .controls, .about {
     width: auto;
     min-width: 0;
+  }
+  .controls {
+    padding-right: 0;
   }
   .scores-container {
     flex: 1 0 auto;

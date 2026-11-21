@@ -13,11 +13,16 @@ $tile-border-radius: 3px;
 $page-margin: 12px;
 
 // In a wide window the board is as tall as the window, in the middle of it,
-// and everything else is in a panel at the top right. In a narrow window
-// the heading and the buttons are above the board, and the text is below.
+// and everything else is in a panel in the middle of the space at its
+// left. In a narrow window the heading and the buttons are above the
+// board, and the text is below. The pause button is always at the top right
+// corner of the board.
 $wide: "(min-width: 800px) and (min-aspect-ratio: 4/3)";
 $panel-min-width: 250px;
 $panel-max-width: 360px;
+
+$button-size: 40px;
+$button-gap: 10px; // Between the pause button and what is next to it
 
 // The height of the heading and the buttons above the board in a narrow
 // window
@@ -102,14 +107,20 @@ html, body {
   justify-content: space-between;
 }
 
+// The New Game button leaves room at its right for the pause button, which
+// is above the corner of the board
 .controls {
   order: 2;
   display: flex;
-  margin: 10px 0;
+  margin: $button-gap 0;
+  padding-right: $button-size + 5px;
 }
 
-.game-container {
+// The board, with the pause button at its top right corner
+.board-area {
   order: 3;
+  position: relative;
+  flex: none;
 }
 
 .about {
@@ -238,8 +249,8 @@ hr {
   padding: 0 20px;
   text-decoration: none;
   color: $bright-text-color;
-  height: 40px;
-  line-height: 42px;
+  height: $button-size;
+  line-height: $button-size + 2px;
 }
 
 .restart-button {
@@ -249,14 +260,17 @@ hr {
 }
 
 // The pause button has an icon and no text. While the game is paused, the
-// icon is the triangle of a play button.
+// icon is the triangle of a play button. In a narrow window it is just
+// above the top right corner of the board, in line with New Game.
 .pause-button {
   @include button;
-  position: relative;
+  position: absolute;
+  right: 0;
+  bottom: 100%;
   box-sizing: border-box;
-  width: 40px;
+  width: $button-size;
   padding: 0;
-  margin-left: 5px;
+  margin-bottom: $button-gap;
 
   &:before {
     content: "";
@@ -285,7 +299,6 @@ hr {
 
 .game-container {
   position: relative;
-  flex: none;
   width: var(--board-width);
   padding: var(--gap);
 
@@ -565,20 +578,33 @@ hr {
     --room-x: calc(100vw - #{2 * ($panel-min-width + 2 * $page-margin)});
     --room-y: calc(var(--page-height) - #{2 * $page-margin});
 
+    // The space at each side of the board, the panel in it, and what is
+    // left free at each side of the panel
+    --beside: calc((100vw - var(--board-width)) / 2);
+    --panel-width: #{unquote("min(#{$panel-max-width}, calc(var(--beside) - #{2 * $page-margin}))")};
+    --panel-free: calc((var(--beside) - var(--panel-width)) / 2);
+
     justify-content: center;
   }
 
-  // The panel fills the space at the right of the board, up to a point. If
+  // The pause button is at the right of the board's top right corner
+  .pause-button {
+    top: 0;
+    right: auto;
+    bottom: auto;
+    left: 100%;
+    margin: 0 0 0 $button-gap;
+  }
+
+  // The panel is in the middle of the space at the left of the board. If
   // the window is too short for it, it scrolls.
   .info {
-    $beside-board: calc((100vw - var(--board-width)) / 2 - #{2 * $page-margin});
-
     display: block;
     position: absolute;
     top: $page-margin;
-    right: $page-margin;
+    left: var(--panel-free);
     box-sizing: border-box;
-    width: unquote("min(#{$panel-max-width}, #{$beside-board})");
+    width: var(--panel-width);
     max-height: calc(var(--page-height) - #{2 * $page-margin});
     overflow-y: auto;
   }
@@ -586,6 +612,10 @@ hr {
   .heading, .controls, .about {
     width: auto;
     min-width: 0;
+  }
+
+  .controls {
+    padding-right: 0;
   }
 
   .scores-container {
