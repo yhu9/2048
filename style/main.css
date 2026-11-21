@@ -75,7 +75,7 @@ h1.title {
   font-size: 54px;
   line-height: 60px;
   font-weight: bold;
-  margin: 0;
+  margin: 0 10px 0 0;
 }
 
 @-webkit-keyframes $animation-name {
@@ -902,6 +902,11 @@ hr {
   .heading, .controls, .about {
     width: auto;
     min-width: 0;
+  }
+  h1.title {
+    flex: none;
+    width: 100%;
+    margin-right: 0;
   }
   .controls {
     padding-right: 0;
