@@ -1,16 +1,16 @@
-"use strict";
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { Direction } from "../js/direction.js";
+import { KeyboardInputManager } from "../js/keyboard_input_manager.js";
+import { Page, indexHtml } from "./helpers/page.js";
 
-const { describe, it } = require("node:test");
-const assert = require("node:assert");
-const { Sandbox, indexHtml } = require("./helpers/sandbox");
-const { UP, RIGHT, DOWN, LEFT } = require("./helpers/game");
+const { up: UP, right: RIGHT, down: DOWN, left: LEFT } = Direction;
 
 // Loads the input manager into the real page and records what it emits.
 function setup() {
-  const page = new Sandbox({ html: indexHtml() });
-  page.load("js/keyboard_input_manager.js");
+  const page = new Page({ html: indexHtml() });
 
-  const input = new page.window.KeyboardInputManager();
+  const input = new KeyboardInputManager();
   const events = [];
   input.on("move", (direction) => events.push(direction));
   input.on("restart", () => events.push("restart"));
@@ -19,8 +19,9 @@ function setup() {
   return { page, events };
 }
 
-function press(page, keyCode, modifiers = {}) {
-  return page.fire(page.document, "keydown", { which: keyCode, ...modifiers });
+// key is the event.key of the key, e.g. "ArrowUp" or "w"
+function press(page, key, modifiers = {}) {
+  return page.fire(page.document, "keydown", { key, ...modifiers });
 }
 
 function click(page, selector) {
@@ -44,7 +45,8 @@ function swipe(page, from, to) {
 function movesWithArrowKeys() {
   const { page, events } = setup();
 
-  [38, 39, 40, 37].forEach((key) => press(page, key));
+  ["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"]
+    .forEach((key) => press(page, key));
 
   assert.deepEqual(events, [UP, RIGHT, DOWN, LEFT]);
 }
@@ -52,8 +54,8 @@ function movesWithArrowKeys() {
 function movesWithWasdAndVimKeys() {
   const { page, events } = setup();
 
-  [87, 68, 83, 65].forEach((key) => press(page, key)); // W D S A
-  [75, 76, 74, 72].forEach((key) => press(page, key)); // K L J H
+  ["w", "d", "s", "a"].forEach((key) => press(page, key));
+  ["k", "l", "j", "h"].forEach((key) => press(page, key));
 
   assert.deepEqual(events, [UP, RIGHT, DOWN, LEFT, UP, RIGHT, DOWN, LEFT]);
 }
@@ -61,17 +63,17 @@ function movesWithWasdAndVimKeys() {
 function stopsScrollingOnMoveKeys() {
   const { page } = setup();
 
-  assert.ok(press(page, 38).defaultPrevented);
-  assert.ok(!press(page, 32).defaultPrevented); // space
+  assert.ok(press(page, "ArrowUp").defaultPrevented);
+  assert.ok(!press(page, " ").defaultPrevented);
 }
 
 function ignoresOtherKeysAndModifiers() {
   const { page, events } = setup();
 
-  press(page, 32);
-  press(page, 38, { ctrlKey: true });
-  press(page, 37, { shiftKey: true });
-  press(page, 82, { metaKey: true });
+  press(page, " ");
+  press(page, "ArrowUp", { ctrlKey: true });
+  press(page, "ArrowLeft", { shiftKey: true });
+  press(page, "r", { metaKey: true });
 
   assert.deepEqual(events, []);
 }
@@ -79,9 +81,27 @@ function ignoresOtherKeysAndModifiers() {
 function restartsWithR() {
   const { page, events } = setup();
 
-  press(page, 82);
+  press(page, "r");
 
   assert.deepEqual(events, ["restart"]);
+}
+
+// Caps Lock turns the letters into capitals.
+function matchesLettersInEitherCase() {
+  const { page, events } = setup();
+
+  ["W", "D", "S", "A", "R"].forEach((key) => press(page, key));
+
+  assert.deepEqual(events, [UP, RIGHT, DOWN, LEFT, "restart"]);
+}
+
+// The old event.which code alone isn't a key press any more.
+function readsEventKeyOnly() {
+  const { page, events } = setup();
+
+  page.fire(page.document, "keydown", { key: "Unidentified", which: 38 });
+
+  assert.deepEqual(events, []);
 }
 
 function restartsFromButtons() {
@@ -129,6 +149,8 @@ function keyboardInputManagerTests() {
   it("ignores other keys and keys held with a modifier",
     ignoresOtherKeysAndModifiers);
   it("restarts with R", restartsWithR);
+  it("matches letter keys in either case", matchesLettersInEitherCase);
+  it("reads event.key, not event.which", readsEventKeyOnly);
   it("restarts from the New Game and Try again buttons", restartsFromButtons);
   it("keeps playing from the Keep going button", keepsPlayingFromButton);
   it("moves in the direction of a swipe", movesWithSwipes);

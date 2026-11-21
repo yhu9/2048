@@ -1,20 +1,17 @@
-"use strict";
-
-const { describe, it } = require("node:test");
-const assert = require("node:assert");
-const { Sandbox, indexHtml } = require("./helpers/sandbox");
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { Grid } from "../js/grid.js";
+import { HTMLActuator } from "../js/html_actuator.js";
+import { Tile } from "../js/tile.js";
+import { Page, indexHtml } from "./helpers/page.js";
 
 function setup() {
-  const page = new Sandbox({ html: indexHtml() });
-  page.load("js/grid.js", "js/tile.js", "js/html_actuator.js");
-
-  const { Grid, Tile, HTMLActuator } = page.window;
+  const page = new Page({ html: indexHtml() });
   const grid = new Grid(4);
   const actuator = new HTMLActuator();
 
   return {
     page,
-    Tile,
 
     addTile(x, y, value) {
       const tile = new Tile({ x, y }, value);
@@ -85,8 +82,8 @@ function marksMergedTiles() {
   const t = setup();
   const merged = t.addTile(0, 0, 4);
   merged.mergedFrom = [
-    new t.Tile({ x: 0, y: 0 }, 2),
-    new t.Tile({ x: 0, y: 0 }, 2)
+    new Tile({ x: 0, y: 0 }, 2),
+    new Tile({ x: 0, y: 0 }, 2)
   ];
 
   t.draw();

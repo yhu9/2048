@@ -1,10 +1,11 @@
-"use strict";
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { Direction } from "../js/direction.js";
+import {
+  newGame, gameWithBoard, setBoard, board
+} from "./helpers/game.js";
 
-const { describe, it } = require("node:test");
-const assert = require("node:assert");
-const {
-  UP, RIGHT, DOWN, LEFT, newGame, gameWithBoard, setBoard, board
-} = require("./helpers/game");
+const { up: UP, right: RIGHT, down: DOWN, left: LEFT } = Direction;
 
 const EMPTY = [0, 0, 0, 0];
 

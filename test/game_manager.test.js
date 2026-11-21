@@ -1,10 +1,11 @@
-"use strict";
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { Direction } from "../js/direction.js";
+import {
+  newGame, gameWithBoard, setBoard, board, savedGame
+} from "./helpers/game.js";
 
-const { describe, it } = require("node:test");
-const assert = require("node:assert");
-const {
-  UP, RIGHT, LEFT, newGame, gameWithBoard, setBoard, board, savedGame
-} = require("./helpers/game");
+const { up: UP, right: RIGHT, left: LEFT } = Direction;
 
 const EMPTY = [0, 0, 0, 0];
 
@@ -54,6 +55,15 @@ function ignoresMovesAfterWinning() {
   game.move(RIGHT);
 
   assert.deepEqual(board(game)[0], [2048, 0, 0, 0]);
+}
+
+function continuePlayingKeepsTheGameGoing() {
+  const game = wonGame();
+
+  game.continuePlaying();
+
+  assert.equal(game.keepPlaying, true);
+  assert.ok(!game.isGameTerminated());
 }
 
 // Game moves if keep playing is pressed
@@ -192,6 +202,7 @@ function clearsSavedGameOnGameOver() {
 function winningTests() {
   it("wins when a 2048 tile is made", winsAt2048);
   it("ignores moves after winning", ignoresMovesAfterWinning);
+  it("goes on after continuePlaying()", continuePlayingKeepsTheGameGoing);
   it("can keep playing", canKeepPlaying);
 }
 
