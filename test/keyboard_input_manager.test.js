@@ -15,6 +15,7 @@ function setup() {
   input.on("move", (direction) => events.push(direction));
   input.on("restart", () => events.push("restart"));
   input.on("keepPlaying", () => events.push("keepPlaying"));
+  input.on("pause", () => events.push("pause"));
 
   return { page, events };
 }
@@ -121,6 +122,17 @@ function keepsPlayingFromButton() {
   assert.deepEqual(events, ["keepPlaying"]);
 }
 
+function pausesWithPAndTheButton() {
+  const { page, events } = setup();
+
+  press(page, "p");
+  press(page, "P");
+  click(page, ".pause-button");
+  press(page, "p", { ctrlKey: true });
+
+  assert.deepEqual(events, ["pause", "pause", "pause"]);
+}
+
 function movesWithSwipes() {
   const { page, events } = setup();
 
@@ -153,6 +165,7 @@ function keyboardInputManagerTests() {
   it("reads event.key, not event.which", readsEventKeyOnly);
   it("restarts from the New Game and Try again buttons", restartsFromButtons);
   it("keeps playing from the Keep going button", keepsPlayingFromButton);
+  it("pauses with P and from the pause button", pausesWithPAndTheButton);
   it("moves in the direction of a swipe", movesWithSwipes);
   it("ignores swipes of 10px or less", ignoresShortSwipes);
 }

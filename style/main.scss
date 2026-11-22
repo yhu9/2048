@@ -1,13 +1,32 @@
 @import "helpers";
 @import "fonts/clear-sans.css";
 
-$field-width: 500px;
-$grid-spacing: 15px;
-$grid-row-cells: 4;
-$tile-size: ($field-width - $grid-spacing * ($grid-row-cells + 1)) / $grid-row-cells;
+// The largest board that tiles can be placed on
+$max-columns: 8;
+$max-rows: 6;
+
+// The gap between two cells, as a part of a cell
+$gap-ratio: 0.14;
 $tile-border-radius: 3px;
 
-$mobile-threshold: $field-width + 20px;
+// The space left free around the page
+$page-margin: 12px;
+
+// In a wide window the board is as tall as the window, in the middle of it,
+// and everything else is in a panel in the middle of the space at its
+// left. In a narrow window the heading and the buttons are above the
+// board, and the text is below. The pause button is always at the top right
+// corner of the board.
+$wide: "(min-width: 800px) and (min-aspect-ratio: 4/3)";
+$panel-min-width: 250px;
+$panel-max-width: 360px;
+
+$button-size: 40px;
+$button-gap: 10px; // Between the pause button and what is next to it
+
+// The height of the heading and the buttons above the board in a narrow
+// window
+$header-height: 130px;
 
 $text-color: #776E65;
 $bright-text-color: #f9f6f2;
@@ -16,7 +35,6 @@ $tile-color: #eee4da;
 $tile-gold-color: #edc22e;
 $tile-gold-glow-color: lighten($tile-gold-color, 15%);
 
-$game-container-margin-top: 40px;
 $game-container-background: #bbada0;
 
 $transition-speed: 100ms;
@@ -31,20 +49,90 @@ html, body {
   font-size: 18px;
 }
 
-body {
-  margin: 80px 0;
+// The sizes of the board are worked out in the browser, so that the board
+// fits the window whatever its columns and rows. HTMLActuator sets --columns
+// and --rows when it draws the board.
+.container {
+  --columns: 4;
+  --rows: 6;
+  --page-height: 100vh;
+
+  // The room there is for the board
+  --room-x: calc(100vw - #{2 * $page-margin});
+  --room-y: calc(var(--page-height) - #{$header-height + 2 * $page-margin});
+
+  // A board of n cells is n cells and n + 1 gaps long. The cells are as big
+  // as both the width and the height allow.
+  --cell: min(
+    calc(var(--room-x) / (var(--columns) + (var(--columns) + 1) * #{$gap-ratio})),
+    calc(var(--room-y) / (var(--rows) + (var(--rows) + 1) * #{$gap-ratio}))
+  );
+  --gap: calc(var(--cell) * #{$gap-ratio});
+  --step: calc(var(--cell) + var(--gap)); // From one cell to the next
+  --board-width: calc(var(--columns) * var(--step) + var(--gap));
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--page-height);
+  padding: $page-margin;
+}
+
+// The height of the window without the browser's own bars, on phones
+@supports (height: 100dvh) {
+  .container {
+    --page-height: 100dvh;
+  }
+}
+
+// In a narrow window the parts of the panel are laid out one by one, around
+// the board
+.info {
+  display: contents;
+}
+
+.heading, .controls, .about {
+  box-sizing: border-box;
+  width: var(--board-width);
+  min-width: unquote("min(100%, 280px)");
 }
 
 .heading {
-  @include clearfix;
+  order: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// The New Game button leaves room at its right for the pause button, which
+// is above the corner of the board
+.controls {
+  order: 2;
+  display: flex;
+  margin: $button-gap 0;
+  padding-right: $button-size + 5px;
+}
+
+// The board, with the pause button at its top right corner
+.board-area {
+  order: 3;
+  position: relative;
+  flex: none;
+}
+
+.about {
+  order: 4;
+  margin-top: 30px;
 }
 
 h1.title {
-  font-size: 80px;
+  font-size: 54px;
+  line-height: 60px;
   font-weight: bold;
-  margin: 0;
-  display: block;
-  float: left;
+  margin: 0 10px 0 0;
 }
 
 @include keyframes(move-up) {
@@ -60,7 +148,7 @@ h1.title {
 }
 
 .scores-container {
-  float: right;
+  display: flex;
   text-align: right;
 }
 
@@ -68,16 +156,15 @@ h1.title {
   $height: 25px;
 
   position: relative;
-  display: inline-block;
   background: $game-container-background;
-  padding: 15px 25px;
+  padding: 15px 20px;
+  min-width: 40px;
   font-size: $height;
   height: $height;
   line-height: $height + 22px;
   font-weight: bold;
   border-radius: 3px;
   color: white;
-  margin-top: 8px;
   text-align: center;
 
   &:after {
@@ -106,8 +193,12 @@ h1.title {
   }
 }
 
-.score-container:after {
-  content: "Score";
+.score-container {
+  margin-right: 5px;
+
+  &:after {
+    content: "Score";
+  }
 }
 
 .best-container:after {
@@ -137,12 +228,7 @@ hr {
   border: none;
   border-bottom: 1px solid lighten($text-color, 40%);
   margin-top: 20px;
-  margin-bottom: 30px;
-}
-
-.container {
-  width: $field-width;
-  margin: 0 auto;
+  margin-bottom: 20px;
 }
 
 @include keyframes(fade-in) {
@@ -163,156 +249,192 @@ hr {
   padding: 0 20px;
   text-decoration: none;
   color: $bright-text-color;
-  height: 40px;
-  line-height: 42px;
+  height: $button-size;
+  line-height: $button-size + 2px;
 }
 
-// Game field mixin used to render CSS at different width
-@mixin game-field {
-  .game-container {
-    margin-top: $game-container-margin-top;
-    position: relative;
-    padding: $grid-spacing;
+.restart-button {
+  @include button;
+  flex: 1;
+  text-align: center;
+}
 
-    cursor: default;
-    -webkit-touch-callout: none;
-    -ms-touch-callout: none;
+// The pause button has an icon and no text. While the game is paused, the
+// icon is the triangle of a play button. In a narrow window it is just
+// above the top right corner of the board, in line with New Game.
+.pause-button {
+  @include button;
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  box-sizing: border-box;
+  width: $button-size;
+  padding: 0;
+  margin-bottom: $button-gap;
 
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-
-    -ms-touch-action: none;
-    touch-action: none;
-
-    background: $game-container-background;
-    border-radius: $tile-border-radius * 2;
-    width: $field-width;
-    height: $field-width;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
+  &:before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
     box-sizing: border-box;
 
-    .game-message {
-      display: none;
-
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      background: rgba($tile-color, .5);
-      z-index: 100;
-
-      text-align: center;
-
-      p {
-        font-size: 60px;
-        font-weight: bold;
-        height: 60px;
-        line-height: 60px;
-        margin-top: 222px;
-        // height: $field-width;
-        // line-height: $field-width;
-      }
-
-      .lower {
-        display: block;
-        margin-top: 59px;
-      }
-
-      a {
-        @include button;
-        margin-left: 9px;
-        // margin-top: 59px;
-
-	&.keep-playing-button {
-	  display: none;
-	}
-      }
-
-      @include animation(fade-in 800ms ease $transition-speed * 12);
-      @include animation-fill-mode(both);
-
-      &.game-won {
-        background: rgba($tile-gold-color, .5);
-        color: $bright-text-color;
-
-	a.keep-playing-button {
-	  display: inline-block;
-	}
-      }
-
-      &.game-won, &.game-over {
-        display: block;
-      }
-    }
+    // Two bars: the left and right borders of a box
+    width: 14px;
+    height: 16px;
+    margin: -8px 0 0 -7px;
+    border: 0 solid $bright-text-color;
+    border-width: 0 5px;
   }
 
-  .grid-container {
+  &.paused:before {
+    // A triangle: the left border of a box with no size
+    width: 0;
+    height: 0;
+    margin: -8px 0 0 -5px;
+    border-width: 8px 0 8px 14px;
+    border-color: transparent transparent transparent $bright-text-color;
+  }
+}
+
+.game-container {
+  position: relative;
+  width: var(--board-width);
+  padding: var(--gap);
+
+  cursor: default;
+  -webkit-touch-callout: none;
+  -ms-touch-callout: none;
+
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+
+  -ms-touch-action: none;
+  touch-action: none;
+
+  background: $game-container-background;
+  border-radius: $tile-border-radius * 2;
+  // The height comes from the grid rows.
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+
+  .game-message {
+    // The text is as big as the board allows
+    $text-height: calc(var(--board-width) * 0.12);
+
+    display: none;
+
     position: absolute;
-    z-index: 1;
-  }
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba($tile-color, .5);
+    z-index: 100;
 
-  .grid-row {
-    margin-bottom: $grid-spacing;
+    text-align: center;
 
-    &:last-child {
-      margin-bottom: 0;
+    p {
+      font-size: $text-height;
+      font-weight: bold;
+      height: $text-height;
+      line-height: $text-height;
+      margin: 0;
     }
 
-    &:after {
-      content: "";
+    .lower {
       display: block;
-      clear: both;
-    }
-  }
-
-  .grid-cell {
-    width: $tile-size;
-    height: $tile-size;
-    margin-right: $grid-spacing;
-    float: left;
-
-    border-radius: $tile-border-radius;
-
-    background: rgba($tile-color, .35);
-
-    &:last-child {
-      margin-right: 0;
-    }
-  }
-
-  .tile-container {
-    position: absolute;
-    z-index: 2;
-  }
-
-  .tile {
-    &, .tile-inner {
-      width: ceil($tile-size);
-      height: ceil($tile-size);
-      line-height: ceil($tile-size);
+      margin-top: $text-height;
     }
 
-    // Build position classes
-    @for $x from 1 through $grid-row-cells {
-      @for $y from 1 through $grid-row-cells {
-        &.tile-position-#{$x}-#{$y} {
-          $xPos: floor(($tile-size + $grid-spacing) * ($x - 1));
-          $yPos: floor(($tile-size + $grid-spacing) * ($y - 1));
-          @include transform(translate($xPos, $yPos));
-        }
+    a {
+      @include button;
+      margin: 0 4px;
+
+      &.keep-playing-button {
+        display: none;
       }
+    }
+
+    @include animation(fade-in 800ms ease $transition-speed * 12);
+    @include animation-fill-mode(both);
+
+    &.game-won {
+      background: rgba($tile-gold-color, .5);
+      color: $bright-text-color;
+
+      a.keep-playing-button {
+        display: inline-block;
+      }
+    }
+
+    // Shown in the middle of the board, however many rows it has
+    &.game-won, &.game-over {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
   }
 }
 
-// End of game-field mixin
-@include game-field;
+.grid-container {
+  position: relative;
+  z-index: 1;
+}
+
+.grid-row {
+  display: flex;
+  margin-bottom: var(--gap);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.grid-cell {
+  flex: none;
+  width: var(--cell);
+  height: var(--cell);
+  margin-right: var(--gap);
+
+  border-radius: $tile-border-radius;
+
+  background: rgba($tile-color, .35);
+
+  &:last-child {
+    margin-right: 0;
+  }
+}
+
+.tile-container {
+  position: absolute;
+  top: var(--gap);
+  left: var(--gap);
+  z-index: 2;
+}
 
 .tile {
   position: absolute; // Makes transforms relative to the top-left corner
+
+  &, .tile-inner {
+    width: var(--cell);
+    height: var(--cell);
+    line-height: var(--cell);
+  }
+
+  // Build position classes
+  @for $x from 1 through $max-columns {
+    @for $y from 1 through $max-rows {
+      &.tile-position-#{$x}-#{$y} {
+        $xPos: calc(#{$x - 1} * var(--step));
+        $yPos: calc(#{$y - 1} * var(--step));
+        @include transform(translate($xPos, $yPos));
+      }
+    }
+  }
 
   .tile-inner {
     border-radius: $tile-border-radius;
@@ -322,7 +444,8 @@ hr {
     font-weight: bold;
     z-index: 10;
 
-    font-size: 55px;
+    // The numbers are as big as the tile allows
+    font-size: calc(var(--cell) * 0.52);
   }
 
   // Movement transition
@@ -383,18 +506,9 @@ hr {
 
       // Adjust font size for bigger numbers
       @if $power >= 100 and $power < 1000 {
-        font-size: 45px;
-
-        // Media queries placed here to avoid carrying over the rest of the logic
-        @include smaller($mobile-threshold) {
-          font-size: 25px;
-        }
+        font-size: calc(var(--cell) * 0.42);
       } @else if $power >= 1000 {
-        font-size: 35px;
-
-        @include smaller($mobile-threshold) {
-          font-size: 15px;
-        }
+        font-size: calc(var(--cell) * 0.33);
       }
     }
 
@@ -406,11 +520,13 @@ hr {
     color: $bright-text-color;
     background: mix(#333, $tile-gold-color, 95%);
 
-    font-size: 30px;
+    font-size: calc(var(--cell) * 0.28);
+  }
 
-    @include smaller($mobile-threshold) {
-      font-size: 10px;
-    }
+  // The tile that is still on its way down. This comes after the tile
+  // colors, because it replaces the glow of the big tiles.
+  &.tile-moving .tile-inner {
+    box-shadow: inset 0 0 0 calc(var(--cell) * 0.04) rgba($bright-text-color, .7);
   }
 }
 
@@ -451,99 +567,89 @@ hr {
   @include animation-fill-mode(backwards);
 }
 
-.above-game {
-  @include clearfix;
-}
-
 .game-intro {
-  float: left;
-  line-height: 42px;
-  margin-bottom: 0;
+  font-size: 1.1em;
 }
 
-.restart-button {
-  @include button;
-  display: block;
-  text-align: center;
-  float: right;
+@media #{$wide} {
+  .container {
+    // Room is kept for the panel on both sides, so that the board stays in
+    // the middle of the window. Nothing is above or below the board.
+    --room-x: calc(100vw - #{2 * ($panel-min-width + 2 * $page-margin)});
+    --room-y: calc(var(--page-height) - #{2 * $page-margin});
+
+    // The space at each side of the board, the panel in it, and what is
+    // left free at each side of the panel
+    --beside: calc((100vw - var(--board-width)) / 2);
+    --panel-width: #{unquote("min(#{$panel-max-width}, calc(var(--beside) - #{2 * $page-margin}))")};
+    --panel-free: calc((var(--beside) - var(--panel-width)) / 2);
+
+    justify-content: center;
+  }
+
+  // The pause button is at the right of the board's top right corner
+  .pause-button {
+    top: 0;
+    right: auto;
+    bottom: auto;
+    left: 100%;
+    margin: 0 0 0 $button-gap;
+  }
+
+  // The panel is in the middle of the space at the left of the board. If
+  // the window is too short for it, it scrolls.
+  .info {
+    display: block;
+    position: absolute;
+    top: $page-margin;
+    left: var(--panel-free);
+    box-sizing: border-box;
+    width: var(--panel-width);
+    max-height: calc(var(--page-height) - #{2 * $page-margin});
+    overflow-y: auto;
+  }
+
+  .heading, .controls, .about {
+    width: auto;
+    min-width: 0;
+  }
+
+  // The title has a line to itself, above the scores
+  h1.title {
+    flex: none;
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .controls {
+    padding-right: 0;
+  }
+
+  .scores-container {
+    flex: 1 0 auto;
+    margin-top: 8px;
+  }
+
+  .score-container, .best-container {
+    flex: 1;
+  }
+
+  .about {
+    margin-top: 20px;
+    font-size: 15px;
+  }
 }
 
-.game-explanation {
-  margin-top: 50px;
-}
-
-@include smaller($mobile-threshold) {
-  // Redefine variables for smaller screens
-  $field-width: 280px;
-  $grid-spacing: 10px;
-  $grid-row-cells: 4;
-  $tile-size: ($field-width - $grid-spacing * ($grid-row-cells + 1)) / $grid-row-cells;
-  $tile-border-radius: 3px;
-  $game-container-margin-top: 17px;
-
+@include smaller(520px) {
   html, body {
     font-size: 15px;
   }
 
-  body {
-    margin: 20px 0;
-    padding: 0 20px;
-  }
-
   h1.title {
-    font-size: 27px;
-    margin-top: 15px;
-  }
-
-  .container {
-    width: $field-width;
-    margin: 0 auto;
+    font-size: 40px;
   }
 
   .score-container, .best-container {
-    margin-top: 0;
     padding: 15px 10px;
-    min-width: 40px;
-  }
-
-  .heading {
-    margin-bottom: 10px;
-  }
-
-  // Show intro and restart button side by side
-  .game-intro {
-    width: 55%;
-    display: block;
-    box-sizing: border-box;
-    line-height: 1.65;
-  }
-
-  .restart-button {
-    width: 42%;
-    padding: 0;
-    display: block;
-    box-sizing: border-box;
-    margin-top: 2px;
-  }
-
-  // Render the game field at the right width
-  @include game-field;
-
-  // Rest of the font-size adjustments in the tile class
-  .tile .tile-inner {
-    font-size: 35px;
-  }
-
-  .game-message {
-    p {
-      font-size: 30px !important;
-      height: 30px !important;
-      line-height: 30px !important;
-      margin-top: 90px !important;
-    }
-
-    .lower {
-      margin-top: 30px !important;
-    }
   }
 }

@@ -4,15 +4,16 @@ import { Grid } from "../js/grid.js";
 import { Tile } from "../js/tile.js";
 
 function startsEmpty() {
-  const grid = new Grid(4);
+  const grid = new Grid(5, 4);
 
-  assert.equal(grid.size, 4);
-  assert.equal(grid.availableCells().length, 16);
+  assert.equal(grid.columns, 5);
+  assert.equal(grid.rows, 4);
+  assert.equal(grid.availableCells().length, 20);
   assert.ok(grid.cellsAvailable());
 }
 
 function insertsAndRemovesTiles() {
-  const grid = new Grid(4);
+  const grid = new Grid(4, 4);
   const tile = new Tile({ x: 2, y: 3 }, 4);
 
   grid.insertTile(tile);
@@ -25,16 +26,18 @@ function insertsAndRemovesTiles() {
 }
 
 function treatsOutsideCellsAsOutOfBounds() {
-  const grid = new Grid(4);
+  const grid = new Grid(4, 4);
 
   assert.ok(grid.withinBounds({ x: 3, y: 3 }));
   assert.ok(!grid.withinBounds({ x: 4, y: 0 }));
+  assert.ok(new Grid(6, 4).withinBounds({ x: 5, y: 3 }));
+  assert.ok(!new Grid(6, 4).withinBounds({ x: 3, y: 5 }));
   assert.ok(!grid.withinBounds({ x: 0, y: -1 }));
   assert.equal(grid.cellContent({ x: 4, y: 0 }), null);
 }
 
 function listsAvailableCells() {
-  const grid = new Grid(2);
+  const grid = new Grid(2, 2);
   grid.insertTile(new Tile({ x: 0, y: 0 }, 2));
 
   assert.deepEqual(grid.availableCells(), [
@@ -49,7 +52,7 @@ function listsAvailableCells() {
 }
 
 function picksAFreeCellWithTheRandomSource() {
-  const grid = new Grid(2);
+  const grid = new Grid(2, 2);
   grid.insertTile(new Tile({ x: 0, y: 0 }, 2));
 
   // Free cells, in order: (0,1), (1,0), (1,1)
@@ -59,12 +62,15 @@ function picksAFreeCellWithTheRandomSource() {
 }
 
 function rebuildsFromSerializedState() {
-  const grid = new Grid(3);
+  const grid = new Grid(3, 2);
   grid.insertTile(new Tile({ x: 0, y: 0 }, 2));
   grid.insertTile(new Tile({ x: 2, y: 1 }, 64));
 
   const state = grid.serialize();
-  const copy = new Grid(state.size, state.cells);
+  const copy = new Grid(state.columns, state.rows, state.cells);
+
+  assert.equal(state.columns, 3);
+  assert.equal(state.rows, 2);
 
   assert.deepEqual(copy.serialize(), state);
   assert.ok(copy.cellContent({ x: 2, y: 1 }) instanceof Tile);

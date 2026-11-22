@@ -1,17 +1,45 @@
-const WINNING_VALUE = 2048;
+import { WINNING_VALUE } from "./rules.js";
 
 export class HTMLActuator {
   constructor() {
+    this.container = document.querySelector(".container");
+    this.gridContainer = document.querySelector(".grid-container");
     this.tileContainer = document.querySelector(".tile-container");
     this.scoreContainer = document.querySelector(".score-container");
     this.bestContainer = document.querySelector(".best-container");
     this.messageContainer = document.querySelector(".game-message");
+    this.pauseButton = document.querySelector(".pause-button");
 
     this.score = 0;
   }
 
+  // Draw an empty board of the given size
+  showBoard({ columns, rows }) {
+    // The stylesheet sizes the cells from these, so that the board fits
+    // the window
+    this.container.style.setProperty("--columns", columns);
+    this.container.style.setProperty("--rows", rows);
+
+    this.clearContainer(this.gridContainer);
+
+    for (let y = 0; y < rows; y += 1) {
+      const row = document.createElement("div");
+      row.classList.add("grid-row");
+
+      for (let x = 0; x < columns; x += 1) {
+        const cell = document.createElement("div");
+        cell.classList.add("grid-cell");
+        row.appendChild(cell);
+      }
+
+      this.gridContainer.appendChild(row);
+    }
+  }
+
   actuate(grid, metadata) {
     window.requestAnimationFrame(() => {
+      this.movingTile = metadata.movingTile;
+
       this.clearContainer(this.tileContainer);
 
       grid.eachCell((x, y, tile) => {
@@ -31,6 +59,16 @@ export class HTMLActuator {
         }
       }
     });
+  }
+
+  // Show whether the game is paused: the pause button's icon becomes a play
+  // icon, because pressing it then goes on with the game.
+  setPaused(paused) {
+    const label = paused ? "Play" : "Pause";
+
+    this.pauseButton.classList.toggle("paused", paused);
+    this.pauseButton.setAttribute("aria-label", label);
+    this.pauseButton.setAttribute("title", `${label} (P)`);
   }
 
   // Continues the game (both restart and keep playing)
@@ -59,6 +97,11 @@ export class HTMLActuator {
 
     if (tile.value > WINNING_VALUE) {
       classes.push("tile-super");
+    }
+
+    // The tile that is still on its way down
+    if (tile === this.movingTile) {
+      classes.push("tile-moving");
     }
 
     this.applyClasses(wrapper, classes);
@@ -113,6 +156,12 @@ export class HTMLActuator {
 
       this.scoreContainer.appendChild(addition);
     }
+  }
+
+  // Set the score without the "+" pop-up that updateScore shows for new
+  // points
+  setScore(score) {
+    this.score = score;
   }
 
   updateBestScore(bestScore) {
