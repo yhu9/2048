@@ -1,7 +1,7 @@
 # 2048, with falling tiles
 A version of [2048](https://github.com/gabrielecirulli/2048) in which the tiles fall. One tile at a time comes in at the top of the board and falls by itself. You steer it, drop it, and merge tiles with the same number until you make the 2048 tile.
 
-[Play it here!](https://yhu9.github.io/2048/) The code is at [github.com/yhu9/2048](https://github.com/yhu9/2048).
+[Play it here!](https://yhu9.github.io/2048/)
 
 <p align="center">
   <img src="meta/screenshot.png" alt="A game in play: landed tiles at the bottom of the board and a 2 falling from the top" width="330"/>
